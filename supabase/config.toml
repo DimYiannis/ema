@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.elevenlabs-tts]
 verify_jwt = false
+
+[functions.migrate-external-user]
+verify_jwt = false
