@@ -17,12 +17,10 @@ import {
   AlertCircle,
   ArrowLeft,
   Loader2,
-  Shield,
-  Bell
+  Shield
 } from "lucide-react";
 import Header from "@/components/Header";
 import PricingPlans from "@/components/PricingPlans";
-import UsageCard from "@/components/UsageCard";
 import { motion } from "framer-motion";
 
 interface PaymentMethod {
@@ -60,13 +58,6 @@ const Subscription = () => {
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCanceling, setIsCanceling] = useState(false);
-  const [usageData, setUsageData] = useState<{
-    minutesUsed: number;
-    minutesLimit: number;
-    minutesCarriedOver: number;
-    billingPeriodEnd?: string;
-  } | null>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -95,73 +86,8 @@ const Subscription = () => {
     if (session) {
       fetchPaymentMethod();
       fetchPaymentHistory();
-      fetchUsageData();
-      fetchNotifications();
     }
   }, [session]);
-
-  const fetchUsageData = async () => {
-    try {
-      // Refresh session before making the call
-      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError || !refreshedSession) {
-        console.log('Session expired, redirecting to login');
-        navigate('/login');
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('get-usage-status');
-      
-      if (error) {
-        console.error('Error fetching usage:', error);
-        // Handle 401 errors by redirecting to login
-        if (error.message?.includes('401') || error.message?.includes('Invalid token')) {
-          navigate('/login');
-          return;
-        }
-        return;
-      }
-
-      if (data?.usage) {
-        setUsageData({
-          minutesUsed: data.usage.minutesUsed,
-          minutesLimit: data.usage.minutesLimit,
-          minutesCarriedOver: data.usage.minutesCarriedOver,
-          billingPeriodEnd: data.usage.billingPeriodEnd,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching usage data:', error);
-    }
-  };
-
-  const fetchNotifications = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', session?.user.id)
-        .eq('read', false)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (!error && data) {
-        setNotifications(data);
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
-  };
-
-  const markNotificationRead = async (id: string) => {
-    await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', id);
-    
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
 
   const fetchPaymentMethod = async () => {
     setIsLoading(true);
@@ -434,58 +360,6 @@ const Subscription = () => {
               </CardContent>
             </Card>
           </motion.div>
-
-          {/* Notifications */}
-          {notifications.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.12 }}
-            >
-              <Card className="border-amber-500/30 bg-amber-500/5">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Bell className="w-5 h-5 text-amber-500" />
-                    Notifications
-                    <Badge variant="secondary" className="ml-auto">
-                      {notifications.length}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {notifications.map((notif) => (
-                    <div 
-                      key={notif.id} 
-                      className="flex items-start justify-between gap-3 p-3 rounded-lg bg-background border"
-                    >
-                      <div>
-                        <p className="font-medium text-sm">{notif.title}</p>
-                        <p className="text-sm text-muted-foreground">{notif.message}</p>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => markNotificationRead(notif.id)}
-                      >
-                        Dismiss
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Usage Card - Show when user has subscription */}
-          {paymentMethod && usageData && (
-            <UsageCard
-              minutesUsed={usageData.minutesUsed}
-              minutesLimit={usageData.minutesLimit}
-              minutesCarriedOver={usageData.minutesCarriedOver}
-              billingPeriodEnd={usageData.billingPeriodEnd}
-              plan={paymentMethod.plan || undefined}
-            />
-          )}
 
           {/* Plan Selection - Show when no payment method */}
           {!paymentMethod && (
@@ -791,84 +665,42 @@ const Subscription = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
-                  Available Plans
+                  Pricing
                 </CardTitle>
-                <CardDescription>Choose the plan that fits your needs</CardDescription>
+                <CardDescription>What you'll be charged after your trial</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Basic Plan */}
-                  <div className="p-4 border rounded-lg space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-lg">Basic</h3>
-                      <Badge variant="outline">Starter</Badge>
-                    </div>
+                <div className="space-y-4">
+                  <div className="flex items-baseline justify-between">
                     <div>
-                      <p className="text-2xl font-bold text-foreground">€9.99<span className="text-sm font-normal text-muted-foreground">/month</span></p>
-                      <p className="text-xs text-muted-foreground mt-1">or €49.99/6mo • €89.99/year</p>
+                      <p className="text-3xl font-bold text-foreground">€9.99</p>
+                      <p className="text-sm text-muted-foreground">per month</p>
                     </div>
-                    <Separator />
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span className="font-medium">300 voice minutes/month</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>AI Voice Assistant</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Standard support</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Basic analytics</span>
-                      </li>
-                    </ul>
+                    <Badge variant="secondary">Standard Plan</Badge>
                   </div>
-
-                  {/* Premium Plan */}
-                  <div className="p-4 border rounded-lg space-y-4 border-primary/50 bg-primary/5 relative">
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent text-primary-foreground">
-                      Most Popular
-                    </Badge>
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-lg">Premium</h3>
-                      <Badge variant="secondary">Pro</Badge>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">€19.99<span className="text-sm font-normal text-muted-foreground">/month</span></p>
-                      <p className="text-xs text-muted-foreground mt-1">or €99.99/6mo • €179.99/year</p>
-                    </div>
-                    <Separator />
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span className="font-medium">1000 voice minutes/month</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Unused minutes rollover (annual)</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Priority support</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Advanced analytics</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Custom voice options</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>API access</span>
-                      </li>
-                    </ul>
-                  </div>
+                  <Separator />
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-accent" />
+                      <span>Unlimited voice interactions</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-accent" />
+                      <span>Real-time navigation assistance</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-accent" />
+                      <span>Daily news briefings</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-accent" />
+                      <span>Family notifications</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-accent" />
+                      <span>Priority customer support</span>
+                    </li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>

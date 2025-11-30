@@ -28,12 +28,7 @@ const PLAN_PRICING = {
   },
 };
 
-const TRIAL_DAYS = 7;
-
-const PLAN_MINUTES = {
-  basic: 300,
-  premium: 1000,
-};
+const TRIAL_DAYS = 14;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -209,8 +204,6 @@ serve(async (req) => {
           plan_duration: planDuration,
           status: 'trial',
           remaining_trial_days: TRIAL_DAYS,
-          trial_days: TRIAL_DAYS,
-          minutes_limit: PLAN_MINUTES[planType],
           billing_amount: planConfig.amount,
           currency: 'EUR',
           subscription_start: new Date().toISOString(),
@@ -289,8 +282,6 @@ serve(async (req) => {
         plan_duration: planDuration,
         status: 'trial',
         remaining_trial_days: TRIAL_DAYS,
-        trial_days: TRIAL_DAYS,
-        minutes_limit: PLAN_MINUTES[planType],
         billing_amount: planConfig.amount,
         currency: 'EUR',
         subscription_start: new Date().toISOString(),

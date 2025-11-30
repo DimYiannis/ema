@@ -35,36 +35,6 @@ export type Database = {
         }
         Relationships: []
       }
-      notifications: {
-        Row: {
-          created_at: string
-          id: string
-          message: string
-          read: boolean
-          title: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message: string
-          read?: boolean
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message?: string
-          read?: boolean
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       payment_history: {
         Row: {
           amount: string | null
@@ -200,7 +170,6 @@ export type Database = {
           created_at: string
           currency: string | null
           id: string
-          minutes_limit: number | null
           mollie_subscription_id: string
           plan: string
           plan_duration: string | null
@@ -208,7 +177,6 @@ export type Database = {
           status: string
           subscription_end: string | null
           subscription_start: string | null
-          trial_days: number | null
           updated_at: string
           user_id: string
         }
@@ -217,7 +185,6 @@ export type Database = {
           created_at?: string
           currency?: string | null
           id?: string
-          minutes_limit?: number | null
           mollie_subscription_id: string
           plan: string
           plan_duration?: string | null
@@ -225,7 +192,6 @@ export type Database = {
           status?: string
           subscription_end?: string | null
           subscription_start?: string | null
-          trial_days?: number | null
           updated_at?: string
           user_id: string
         }
@@ -234,7 +200,6 @@ export type Database = {
           created_at?: string
           currency?: string | null
           id?: string
-          minutes_limit?: number | null
           mollie_subscription_id?: string
           plan?: string
           plan_duration?: string | null
@@ -242,61 +207,10 @@ export type Database = {
           status?: string
           subscription_end?: string | null
           subscription_start?: string | null
-          trial_days?: number | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
-      }
-      usage_tracking: {
-        Row: {
-          billing_period_end: string | null
-          billing_period_start: string
-          created_at: string
-          id: string
-          last_reset_date: string | null
-          minutes_carried_over: number
-          minutes_limit: number
-          minutes_used: number
-          subscription_id: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          billing_period_end?: string | null
-          billing_period_start?: string
-          created_at?: string
-          id?: string
-          last_reset_date?: string | null
-          minutes_carried_over?: number
-          minutes_limit?: number
-          minutes_used?: number
-          subscription_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          billing_period_end?: string | null
-          billing_period_start?: string
-          created_at?: string
-          id?: string
-          last_reset_date?: string | null
-          minutes_carried_over?: number
-          minutes_limit?: number
-          minutes_used?: number
-          subscription_id?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "usage_tracking_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {

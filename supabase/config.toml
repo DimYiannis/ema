@@ -17,12 +17,3 @@ verify_jwt = false
 
 [functions.update-mollie-subscription]
 verify_jwt = false
-
-[functions.track-voice-usage]
-verify_jwt = false
-
-[functions.check-subscription-status]
-verify_jwt = false
-
-[functions.get-usage-status]
-verify_jwt = false
