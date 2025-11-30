@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, MeshDistortMaterial } from '@react-three/drei';
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -107,6 +107,15 @@ function AnimatedOrb() {
 }
 
 export default function HeroScene() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <div className="absolute inset-0 z-10 pointer-events-none md:pointer-events-auto">
       <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
@@ -116,7 +125,9 @@ export default function HeroScene() {
         <pointLight position={[0, 0, 5]} intensity={1.8} color="hsl(var(--accent))" />
         <LineParticles />
         <AnimatedOrb />
-        <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+        {!isMobile && (
+          <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+        )}
       </Canvas>
     </div>
   );
