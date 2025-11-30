@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,9 @@ import {
   AlertCircle,
   ArrowLeft,
   Loader2,
-  Shield
+  Shield,
+  Power,
+  PowerOff
 } from "lucide-react";
 import Header from "@/components/Header";
 import PricingPlans from "@/components/PricingPlans";
@@ -57,8 +59,28 @@ const Subscription = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCanceling, setIsCanceling] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Check for Mollie redirect status
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status === 'paid' || status === 'success') {
+      toast.success('Subscription activated!', {
+        description: 'Your payment was successful and your subscription is now active.',
+      });
+      // Clean up URL
+      searchParams.delete('status');
+      setSearchParams(searchParams, { replace: true });
+    } else if (status === 'failed' || status === 'canceled') {
+      toast.error('Payment not completed', {
+        description: 'Your payment was not completed. Please try again.',
+      });
+      searchParams.delete('status');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     // Auth state listener
@@ -150,31 +172,38 @@ const Subscription = () => {
     };
   };
 
-  const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features after your trial ends.')) {
+  const handleToggleSubscription = async () => {
+    const newStatus = paymentMethod?.subscription_status === 'active' ? 'inactive' : 'active';
+    const actionText = newStatus === 'active' ? 'activate' : 'deactivate';
+    
+    if (!confirm(`Are you sure you want to ${actionText} your subscription?`)) {
       return;
     }
 
-    setIsCanceling(true);
+    setIsToggling(true);
     try {
-      // Update payment method to inactive
       const { error } = await supabase
         .from('payment_methods')
-        .update({ is_active: false })
+        .update({ 
+          subscription_status: newStatus,
+          is_active: newStatus === 'active'
+        })
         .eq('user_id', session?.user.id);
 
       if (error) throw error;
 
-      toast.success('Subscription canceled', {
-        description: 'You will retain access until your trial ends.',
+      toast.success(`Subscription ${newStatus === 'active' ? 'activated' : 'deactivated'}`, {
+        description: newStatus === 'active' 
+          ? 'Your subscription is now active.' 
+          : 'Your subscription has been deactivated.',
       });
 
       fetchPaymentMethod();
     } catch (error) {
-      console.error('Error canceling subscription:', error);
-      toast.error('Failed to cancel subscription');
+      console.error(`Error ${actionText}ing subscription:`, error);
+      toast.error(`Failed to ${actionText} subscription`);
     } finally {
-      setIsCanceling(false);
+      setIsToggling(false);
     }
   };
 
@@ -505,50 +534,78 @@ const Subscription = () => {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle>Subscription Actions</CardTitle>
-                  <CardDescription>Manage your subscription settings</CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    {paymentMethod.subscription_status === 'active' ? (
+                      <Power className="w-5 h-5 text-accent" />
+                    ) : (
+                      <PowerOff className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    Subscription Status
+                  </CardTitle>
+                  <CardDescription>
+                    Your subscription is currently{' '}
+                    <span className={paymentMethod.subscription_status === 'active' ? 'text-accent font-medium' : 'text-muted-foreground font-medium'}>
+                      {paymentMethod.subscription_status === 'active' ? 'Active' : 'Inactive'}
+                    </span>
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {paymentMethod.is_active ? (
-                    <Button
-                      variant="destructive"
-                      onClick={handleCancelSubscription}
-                      disabled={isCanceling}
-                      className="w-full"
-                    >
-                      {isCanceling ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Canceling...
-                        </>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                    <div className="flex items-center gap-3">
+                      {paymentMethod.subscription_status === 'active' ? (
+                        <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-accent" />
+                        </div>
                       ) : (
-                        <>
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Cancel Subscription
-                        </>
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <XCircle className="w-5 h-5 text-muted-foreground" />
+                        </div>
                       )}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleAddPaymentMethod}
-                      disabled={isLoading}
-                      className="w-full"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Redirecting...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Reactivate Subscription
-                        </>
-                      )}
-                    </Button>
-                  )}
+                      <div>
+                        <p className="font-medium">
+                          {paymentMethod.subscription_status === 'active' ? 'Subscription Active' : 'Subscription Inactive'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {paymentMethod.subscription_status === 'active' 
+                            ? 'You have full access to all features'
+                            : 'Reactivate to regain access to features'}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className={paymentMethod.subscription_status === 'active' 
+                      ? 'bg-accent/20 text-accent border-accent/30' 
+                      : 'bg-muted text-muted-foreground'}>
+                      {paymentMethod.subscription_status === 'active' ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+                  
+                  <Button
+                    variant={paymentMethod.subscription_status === 'active' ? 'destructive' : 'default'}
+                    onClick={handleToggleSubscription}
+                    disabled={isToggling}
+                    className="w-full"
+                  >
+                    {isToggling ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {paymentMethod.subscription_status === 'active' ? 'Deactivating...' : 'Activating...'}
+                      </>
+                    ) : paymentMethod.subscription_status === 'active' ? (
+                      <>
+                        <PowerOff className="w-4 h-4 mr-2" />
+                        Deactivate Subscription
+                      </>
+                    ) : (
+                      <>
+                        <Power className="w-4 h-4 mr-2" />
+                        Activate Subscription
+                      </>
+                    )}
+                  </Button>
                   <p className="text-xs text-center text-muted-foreground">
-                    You can cancel anytime. Access continues until trial end.
+                    {paymentMethod.subscription_status === 'active' 
+                      ? 'Deactivating will pause your subscription. You can reactivate anytime.'
+                      : 'Activate your subscription to regain access to all features.'}
                   </p>
                 </CardContent>
               </Card>
