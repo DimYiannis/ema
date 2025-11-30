@@ -20,6 +20,7 @@ import {
   Shield
 } from "lucide-react";
 import Header from "@/components/Header";
+import PricingPlans from "@/components/PricingPlans";
 import { motion } from "framer-motion";
 
 interface PaymentMethod {
@@ -360,6 +361,35 @@ const Subscription = () => {
             </Card>
           </motion.div>
 
+          {/* Plan Selection - Show when no payment method */}
+          {!paymentMethod && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Choose Your Plan</CardTitle>
+                  <CardDescription>Select a plan to start your 14-day free trial</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PricingPlans
+                    userId={session?.user.id || ""}
+                    userEmail={session?.user.email || ""}
+                    userName={session?.user.user_metadata?.first_name 
+                      ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ""}`.trim()
+                      : session?.user.email || ""}
+                    onSubscriptionCreated={() => {
+                      fetchPaymentMethod();
+                      fetchPaymentHistory();
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
           {/* Payment Method Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -461,40 +491,7 @@ const Subscription = () => {
                       <span>Secured by Mollie payment processing</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center py-8 space-y-4">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-                      <CreditCard className="w-8 h-8 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground mb-1">No payment method</p>
-                      <p className="text-sm text-muted-foreground">
-                        Add a payment method to start your free trial
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
-                        <Shield className="w-3 h-3" />
-                        You'll be redirected to Mollie secure checkout
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={handleAddPaymentMethod} 
-                      disabled={isLoading}
-                      className="mt-4"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Redirecting to Mollie...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Add Payment Method
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
+                ) : null}
               </CardContent>
             </Card>
           </motion.div>
