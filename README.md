@@ -6,8 +6,6 @@ A modern voice-powered AI assistant application built with React, featuring real
 
 <img width="2888" height="1418" alt="image" src="https://github.com/user-attachments/assets/c67e55b1-29bb-4c3d-af1c-b8e886659de1" />
 
-**Project URL**: https://lovable.dev/projects/451314f8-6a5f-4190-aac2-87994609d46f
-
 ## Features
 
 - **Voice Chat Agent** - Real-time voice conversations with an AI assistant using ElevenLabs Conversational AI
