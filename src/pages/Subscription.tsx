@@ -390,34 +390,37 @@ const Subscription = () => {
             </Card>
           </motion.div>
 
-          {/* Plan Selection - Show when no payment method */}
-          {!paymentMethod && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Choose Your Plan</CardTitle>
-                  <CardDescription>Select a plan to start your 7-day free trial</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PricingPlans
-                    userId={session?.user.id || ""}
-                    userEmail={session?.user.email || ""}
-                    userName={session?.user.user_metadata?.first_name 
-                      ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ""}`.trim()
-                      : session?.user.email || ""}
-                    onSubscriptionCreated={() => {
-                      fetchPaymentMethod();
-                      fetchPaymentHistory();
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+          {/* Plan Selection - Always show pricing options */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Choose Your Plan</CardTitle>
+                <CardDescription>
+                  {paymentMethod ? "Upgrade or change your subscription plan" : "Select a plan to start your 7-day free trial"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PricingPlans
+                  userId={session?.user.id || ""}
+                  userEmail={session?.user.email || ""}
+                  userName={session?.user.user_metadata?.first_name 
+                    ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ""}`.trim()
+                    : session?.user.email || ""}
+                  currentPlan={paymentMethod?.plan}
+                  currentDuration={null}
+                  isUpgrade={!!paymentMethod}
+                  onSubscriptionCreated={() => {
+                    fetchPaymentMethod();
+                    fetchPaymentHistory();
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Payment Method Card */}
           <motion.div
@@ -607,38 +610,6 @@ const Subscription = () => {
                       ? 'Deactivating will pause your subscription. You can reactivate anytime.'
                       : 'Activate your subscription to regain access to all features.'}
                   </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Change Plan Section - Show when user has active subscription */}
-          {paymentMethod && paymentMethod.is_active && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.35 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Change Plan</CardTitle>
-                  <CardDescription>Upgrade or change your subscription plan</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PricingPlans
-                    userId={session?.user.id || ""}
-                    userEmail={session?.user.email || ""}
-                    userName={session?.user.user_metadata?.first_name 
-                      ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ""}`.trim()
-                      : session?.user.email || ""}
-                    currentPlan={paymentMethod.plan}
-                    currentDuration="monthly"
-                    isUpgrade={true}
-                    onSubscriptionCreated={() => {
-                      fetchPaymentMethod();
-                      fetchPaymentHistory();
-                    }}
-                  />
                 </CardContent>
               </Card>
             </motion.div>
