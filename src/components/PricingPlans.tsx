@@ -343,6 +343,29 @@ const PricingPlans = ({
           </Table>
         </div>
       </motion.div>
+
+      {/* Subscribe Button */}
+      <div className="flex justify-center pt-4">
+        <Button
+          size="lg"
+          onClick={handleSubscribe}
+          disabled={isLoading || isCurrentPlan}
+          className="min-w-[200px]"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Processing...
+            </>
+          ) : isCurrentPlan ? (
+            "Current Plan"
+          ) : isUpgrade ? (
+            "Update Plan"
+          ) : (
+            "Activate Subscription"
+          )}
+        </Button>
+      </div>
     </div>
   );
 };
