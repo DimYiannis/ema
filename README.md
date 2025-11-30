@@ -2,6 +2,8 @@
 
 A modern voice-powered AI assistant application built with React, featuring real-time conversational AI capabilities powered by ElevenLabs.
 
+**Project URL**: https://lovable.dev/projects/451314f8-6a5f-4190-aac2-87994609d46f
+
 ## Features
 
 - **Voice Chat Agent** - Real-time voice conversations with an AI assistant using ElevenLabs Conversational AI
