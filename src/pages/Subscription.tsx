@@ -386,11 +386,12 @@ const Subscription = () => {
                           <p className="font-medium">
                             {paymentMethod.card_last_four 
                               ? `•••• ${paymentMethod.card_last_four}`
-                              : 'Card on file'}
+                              : 'No card verified yet'}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {paymentMethod.payment_method_type || 'Credit Card'}
-                            {paymentMethod.card_expiry && ` • Expires ${paymentMethod.card_expiry}`}
+                            {paymentMethod.card_last_four 
+                              ? `${paymentMethod.payment_method_type || 'Credit Card'}${paymentMethod.card_expiry ? ` • Expires ${paymentMethod.card_expiry}` : ''}`
+                              : 'Complete card verification to activate'}
                           </p>
                           {paymentMethod.plan && (
                             <p className="text-sm font-medium text-primary mt-1">
@@ -399,14 +400,21 @@ const Subscription = () => {
                           )}
                         </div>
                       </div>
-                      {paymentMethod.is_active ? (
-                        <Badge className="bg-accent/20 text-accent border-accent/30">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Active
-                        </Badge>
+                      {paymentMethod.card_last_four && paymentMethod.mollie_mandate_id ? (
+                        paymentMethod.is_active ? (
+                          <Badge className="bg-accent/20 text-accent border-accent/30">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            Inactive
+                          </Badge>
+                        )
                       ) : (
-                        <Badge variant="secondary">
-                          Inactive
+                        <Badge variant="outline" className="border-amber-500/50 text-amber-600">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Pending
                         </Badge>
                       )}
                     </div>
