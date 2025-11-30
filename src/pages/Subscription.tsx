@@ -665,42 +665,84 @@ const Subscription = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
-                  Pricing
+                  Available Plans
                 </CardTitle>
-                <CardDescription>What you'll be charged after your trial</CardDescription>
+                <CardDescription>Choose the plan that fits your needs</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-baseline justify-between">
-                    <div>
-                      <p className="text-3xl font-bold text-foreground">€9.99</p>
-                      <p className="text-sm text-muted-foreground">per month</p>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Basic Plan */}
+                  <div className="p-4 border rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg">Basic</h3>
+                      <Badge variant="outline">Starter</Badge>
                     </div>
-                    <Badge variant="secondary">Standard Plan</Badge>
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">€9.99<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                      <p className="text-xs text-muted-foreground mt-1">or €49.99/6mo • €89.99/year</p>
+                    </div>
+                    <Separator />
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>AI Voice Assistant</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>Up to 100 conversations/month</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>Standard support</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>Basic analytics</span>
+                      </li>
+                    </ul>
                   </div>
-                  <Separator />
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-accent" />
-                      <span>Unlimited voice interactions</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-accent" />
-                      <span>Real-time navigation assistance</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-accent" />
-                      <span>Daily news briefings</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-accent" />
-                      <span>Family notifications</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-accent" />
-                      <span>Priority customer support</span>
-                    </li>
-                  </ul>
+
+                  {/* Premium Plan */}
+                  <div className="p-4 border rounded-lg space-y-4 border-primary/50 bg-primary/5 relative">
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent text-primary-foreground">
+                      Most Popular
+                    </Badge>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg">Premium</h3>
+                      <Badge variant="secondary">Pro</Badge>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-foreground">€19.99<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                      <p className="text-xs text-muted-foreground mt-1">or €99.99/6mo • €179.99/year</p>
+                    </div>
+                    <Separator />
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>Everything in Basic</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>Unlimited conversations</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>Priority support</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>Advanced analytics</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>Custom voice options</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-accent" />
+                        <span>API access</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </CardContent>
             </Card>
