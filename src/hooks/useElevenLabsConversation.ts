@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 interface UseElevenLabsConversationProps {
   agentId: string;
-  onMessage?: (message: any) => void;
+  onMessage?: (message: unknown) => void;
   onError?: (error: string) => void;
 }
 
@@ -30,10 +30,12 @@ export const useElevenLabsConversation = ({
       console.log('ElevenLabs message:', message);
       onMessage?.(message);
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error('ElevenLabs error:', error);
       setIsConnecting(false);
-      const errorMessage = error instanceof Error ? error.message : 'Connection error';
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
+        ? String((error as { message: string }).message) 
+        : 'Connection error';
       toast.error(errorMessage);
       onError?.(errorMessage);
     },
@@ -61,26 +63,26 @@ export const useElevenLabsConversation = ({
 
       // Start the conversation with the signed URL
       const conversationId = await conversation.startSession({
-        url: data.signedUrl,
+        signedUrl: data.signedUrl,
       });
 
       console.log('Conversation started:', conversationId);
       return conversationId;
-    } catch (error) {
+    } catch (err) {
       setIsConnecting(false);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start conversation';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start conversation';
       console.error('Error starting conversation:', errorMessage);
       toast.error(errorMessage);
       onError?.(errorMessage);
-      throw error;
+      throw err;
     }
   }, [agentId, conversation, onError]);
 
   const endConversation = useCallback(async () => {
     try {
       await conversation.endSession();
-    } catch (error) {
-      console.error('Error ending conversation:', error);
+    } catch (err) {
+      console.error('Error ending conversation:', err);
     }
   }, [conversation]);
 
