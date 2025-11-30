@@ -102,10 +102,24 @@ const Subscription = () => {
 
   const fetchUsageData = async () => {
     try {
+      // Refresh session before making the call
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshedSession) {
+        console.log('Session expired, redirecting to login');
+        navigate('/login');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('get-usage-status');
       
       if (error) {
         console.error('Error fetching usage:', error);
+        // Handle 401 errors by redirecting to login
+        if (error.message?.includes('401') || error.message?.includes('Invalid token')) {
+          navigate('/login');
+          return;
+        }
         return;
       }
 
