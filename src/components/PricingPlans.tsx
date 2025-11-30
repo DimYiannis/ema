@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Check, Loader2, Sparkles, Zap } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Check, Loader2, Sparkles, X, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -262,6 +263,86 @@ const PricingPlans = ({
           );
         })}
       </div>
+
+      {/* Feature Comparison Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+        className="mt-8"
+      >
+        <h3 className="text-lg font-semibold text-center mb-4">Feature Comparison</h3>
+        <div className="rounded-lg border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="w-[40%]">Feature</TableHead>
+                <TableHead className="text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" />
+                    Basic
+                  </div>
+                </TableHead>
+                <TableHead className="text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Premium
+                  </div>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Monthly Price</TableCell>
+                <TableCell className="text-center">€9.99</TableCell>
+                <TableCell className="text-center">€19.99</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Voice Minutes/Month</TableCell>
+                <TableCell className="text-center">300</TableCell>
+                <TableCell className="text-center">1,000</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">AI Voice Assistant</TableCell>
+                <TableCell className="text-center"><Check className="w-5 h-5 text-accent mx-auto" /></TableCell>
+                <TableCell className="text-center"><Check className="w-5 h-5 text-accent mx-auto" /></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Basic Analytics</TableCell>
+                <TableCell className="text-center"><Check className="w-5 h-5 text-accent mx-auto" /></TableCell>
+                <TableCell className="text-center"><Check className="w-5 h-5 text-accent mx-auto" /></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Advanced Analytics</TableCell>
+                <TableCell className="text-center"><X className="w-5 h-5 text-muted-foreground mx-auto" /></TableCell>
+                <TableCell className="text-center"><Check className="w-5 h-5 text-accent mx-auto" /></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Priority Support</TableCell>
+                <TableCell className="text-center"><X className="w-5 h-5 text-muted-foreground mx-auto" /></TableCell>
+                <TableCell className="text-center"><Check className="w-5 h-5 text-accent mx-auto" /></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Custom Voice Options</TableCell>
+                <TableCell className="text-center"><X className="w-5 h-5 text-muted-foreground mx-auto" /></TableCell>
+                <TableCell className="text-center"><Check className="w-5 h-5 text-accent mx-auto" /></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Minutes Carryover</TableCell>
+                <TableCell className="text-center"><X className="w-5 h-5 text-muted-foreground mx-auto" /></TableCell>
+                <TableCell className="text-center">
+                  <span className="text-xs text-muted-foreground">Annual only</span>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Billing Options</TableCell>
+                <TableCell className="text-center">Monthly</TableCell>
+                <TableCell className="text-center">Monthly, 6-Month, Annual</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </motion.div>
 
       {/* Trial Info & Subscribe Button */}
       <div className="text-center space-y-4">
