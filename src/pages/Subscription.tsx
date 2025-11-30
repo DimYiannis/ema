@@ -400,7 +400,7 @@ const Subscription = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Choose Your Plan</CardTitle>
-                  <CardDescription>Select a plan to start your 14-day free trial</CardDescription>
+                  <CardDescription>Select a plan to start your 7-day free trial</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <PricingPlans
