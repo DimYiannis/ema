@@ -4,12 +4,55 @@
 
 @layer base {
   :root {
-    /* Dark, sophisticated palette */
+    /* Light mode - warm, sophisticated palette */
+    --background: 40 30% 97%;
+    --foreground: 20 20% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 20% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 20% 15%;
+    --primary: 140 25% 35%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 20% 92%;
+    --secondary-foreground: 20 20% 20%;
+    --muted: 40 15% 90%;
+    --muted-foreground: 20 10% 45%;
+    --accent: 140 20% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 15% 85%;
+    --input: 40 15% 85%;
+    --ring: 140 25% 35%;
+    --radius: 1rem;
+
+    /* Custom tokens */
+    --tag-financing: 210 50% 45%;
+    --tag-lifestyle: 140 30% 40%;
+    --tag-community: 25 45% 45%;
+    --tag-wellness: 280 35% 50%;
+    --tag-travel: 195 55% 45%;
+    --tag-creativity: 330 45% 50%;
+    --tag-growth: 50 55% 45%;
+    --cream: 40 40% 95%;
+    --cream-foreground: 20 20% 15%;
+    --surface-elevated: 0 0% 100%;
+    --shadow-soft: 20 20% 15%;
+    
+    /* Button gradients and effects */
+    --gradient-accent: linear-gradient(135deg, hsl(140, 30%, 38%), hsl(140, 35%, 48%));
+    --gradient-destructive: linear-gradient(135deg, hsl(0, 65%, 48%), hsl(340, 65%, 52%));
+    --glow-accent: 0 0 20px hsla(140, 30%, 40%, 0.25), 0 8px 20px rgba(0, 0, 0, 0.1);
+    --glow-destructive: 0 0 30px hsla(0, 65%, 50%, 0.35), 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark {
+    /* Dark mode - sophisticated dark palette */
     --background: 0 0% 8%;
     --foreground: 36 44% 96%;
     --card: 0 0% 12%;
     --card-foreground: 36 44% 96%;
-    --popover: 0 0% 8%;
+    --popover: 0 0% 10%;
     --popover-foreground: 36 44% 96%;
     --primary: 36 44% 96%;
     --primary-foreground: 0 0% 18%;
@@ -24,9 +67,8 @@
     --border: 0 0% 18%;
     --input: 0 0% 18%;
     --ring: 36 44% 96%;
-    --radius: 1rem;
 
-    /* Custom tokens */
+    /* Dark mode custom tokens */
     --tag-financing: 210 50% 75%;
     --tag-lifestyle: 140 20% 70%;
     --tag-community: 25 35% 60%;
@@ -44,28 +86,6 @@
     --gradient-destructive: linear-gradient(135deg, hsl(0, 65%, 48%), hsl(340, 65%, 52%));
     --glow-accent: 0 0 30px hsla(140, 25%, 45%, 0.4), 0 10px 30px rgba(0, 0, 0, 0.3);
     --glow-destructive: 0 0 40px hsla(0, 65%, 50%, 0.5), 0 10px 30px rgba(0, 0, 0, 0.3);
-  }
-
-  .dark {
-    --background: 0 0% 10%;
-    --foreground: 36 44% 96%;
-    --card: 0 0% 14%;
-    --card-foreground: 36 44% 96%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 36 44% 96%;
-    --primary: 36 44% 96%;
-    --primary-foreground: 0 0% 18%;
-    --secondary: 25 15% 30%;
-    --secondary-foreground: 36 44% 96%;
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 140 20% 45%;
-    --accent-foreground: 36 44% 96%;
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 36 44% 96%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 36 44% 96%;
   }
 
   html {
