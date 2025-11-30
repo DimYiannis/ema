@@ -343,48 +343,6 @@ const PricingPlans = ({
           </Table>
         </div>
       </motion.div>
-
-      {/* Trial Info & Subscribe Button */}
-      <div className="text-center space-y-4">
-        {!isUpgrade && (
-          <p className="text-sm text-muted-foreground">
-            Start with a <span className="font-medium text-foreground">{TRIAL_DAYS}-day free trial</span>.
-            Cancel anytime before it ends and you won't be charged.
-          </p>
-        )}
-
-        {isUpgrade && isCurrentPlan && (
-          <p className="text-sm text-muted-foreground">
-            This is your current plan. Select a different plan or duration to make changes.
-          </p>
-        )}
-
-        <Button
-          size="lg"
-          onClick={handleSubscribe}
-          disabled={isLoading || isCurrentPlan}
-          className="px-8"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {isUpgrade ? "Updating..." : "Setting up..."}
-            </>
-          ) : isCurrentPlan ? (
-            "Current Plan"
-          ) : isUpgrade ? (
-            `Change to ${PLANS[selectedPlan].name} Plan`
-          ) : (
-            `Start Free Trial - ${PLANS[selectedPlan].name} Plan`
-          )}
-        </Button>
-
-        {!isUpgrade && (
-          <p className="text-xs text-muted-foreground">
-            You'll be redirected to securely add your payment method
-          </p>
-        )}
-      </div>
     </div>
   );
 };
