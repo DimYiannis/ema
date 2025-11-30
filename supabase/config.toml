@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.create-mollie-subscription]
 verify_jwt = false
+
+[functions.update-trial-days]
+verify_jwt = false

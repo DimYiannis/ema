@@ -166,10 +166,14 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          billing_amount: string | null
           created_at: string
+          currency: string | null
           id: string
           mollie_subscription_id: string
           plan: string
+          plan_duration: string | null
+          remaining_trial_days: number | null
           status: string
           subscription_end: string | null
           subscription_start: string | null
@@ -177,10 +181,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_amount?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           mollie_subscription_id: string
           plan: string
+          plan_duration?: string | null
+          remaining_trial_days?: number | null
           status?: string
           subscription_end?: string | null
           subscription_start?: string | null
@@ -188,10 +196,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_amount?: string | null
           created_at?: string
+          currency?: string | null
           id?: string
           mollie_subscription_id?: string
           plan?: string
+          plan_duration?: string | null
+          remaining_trial_days?: number | null
           status?: string
           subscription_end?: string | null
           subscription_start?: string | null
