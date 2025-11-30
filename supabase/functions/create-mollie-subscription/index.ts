@@ -156,7 +156,8 @@ serve(async (req) => {
 
     const planConfig = PLAN_PRICING[planType][planDuration];
     const webhookUrl = `${supabaseUrl}/functions/v1/mollie-webhook`;
-    const redirectUrl = `${req.headers.get('origin') || 'https://ysqnwkysszqjwvnuqruk.lovable.app'}/subscription?setup=complete`;
+    const baseRedirectUrl = req.headers.get('origin') || 'https://ysqnwkysszqjwvnuqruk.lovable.app';
+    const redirectUrl = `${baseRedirectUrl}/subscription?status=paid`;
 
     // If no valid mandate, create first payment for card verification
     if (!validMandate) {
@@ -215,6 +216,22 @@ serve(async (req) => {
       if (subError) {
         console.error('Failed to create subscription record:', subError);
         throw new Error('Failed to store subscription');
+      }
+
+      // Create or update payment_methods for the user
+      const { error: pmError } = await supabase
+        .from('payment_methods')
+        .upsert({
+          user_id: userId,
+          mollie_customer_id: mollieCustomerId,
+          plan: planType,
+          subscription_status: 'pending',
+          is_active: false,
+          trial_end_date: trialEndDate.toISOString(),
+        }, { onConflict: 'user_id' });
+
+      if (pmError) {
+        console.error('Failed to update payment method:', pmError);
       }
 
       return new Response(
@@ -293,6 +310,25 @@ serve(async (req) => {
     if (subError) {
       console.error('Failed to store subscription:', subError);
       throw new Error('Failed to store subscription');
+    }
+
+    // Create or update payment_methods for the user
+    const { error: pmError } = await supabase
+      .from('payment_methods')
+      .upsert({
+        user_id: userId,
+        mollie_customer_id: mollieCustomerId,
+        mollie_subscription_id: subscriptionData.id,
+        plan: planType,
+        subscription_status: 'active',
+        is_active: true,
+        trial_end_date: trialEndDate.toISOString(),
+        subscription_start: new Date().toISOString(),
+        subscription_end: subscriptionEndDate.toISOString(),
+      }, { onConflict: 'user_id' });
+
+    if (pmError) {
+      console.error('Failed to update payment method:', pmError);
     }
 
     return new Response(

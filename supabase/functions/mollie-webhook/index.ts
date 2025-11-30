@@ -142,6 +142,7 @@ serve(async (req) => {
             .from('payment_methods')
             .update({
               is_active: true,
+              subscription_status: 'active',
             })
             .eq('user_id', userId);
 
@@ -174,6 +175,7 @@ serve(async (req) => {
           .from('payment_methods')
           .update({
             is_active: false,
+            subscription_status: 'inactive',
           })
           .eq('user_id', userId);
 
