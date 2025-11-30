@@ -11,13 +11,24 @@ interface SubscriptionRequest {
   userId: string;
   userName: string;
   userEmail: string;
-  plan: 'basic' | 'premium';
+  planType: 'basic' | 'premium';
+  planDuration: 'monthly' | '6-month' | 'annual';
 }
 
-const PLAN_PRICES = {
-  basic: { amount: '9.99', interval: '1 month', description: 'Basic Plan - Monthly' },
-  premium: { amount: '19.99', interval: '1 month', description: 'Premium Plan - Monthly' },
+const PLAN_PRICING = {
+  basic: {
+    monthly: { amount: '9.99', interval: '1 month', months: 1 },
+    '6-month': { amount: '49.99', interval: '6 months', months: 6 },
+    annual: { amount: '89.99', interval: '12 months', months: 12 },
+  },
+  premium: {
+    monthly: { amount: '19.99', interval: '1 month', months: 1 },
+    '6-month': { amount: '99.99', interval: '6 months', months: 6 },
+    annual: { amount: '179.99', interval: '12 months', months: 12 },
+  },
 };
+
+const TRIAL_DAYS = 14;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -35,46 +46,56 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { userId, userName, userEmail, plan }: SubscriptionRequest = await req.json();
+    const { userId, userName, userEmail, planType, planDuration }: SubscriptionRequest = await req.json();
 
     // Validate required fields
-    if (!userId || !userName || !userEmail || !plan) {
+    if (!userId || !userName || !userEmail || !planType || !planDuration) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: userId, userName, userEmail, plan' }),
+        JSON.stringify({ error: 'Missing required fields: userId, userName, userEmail, planType, planDuration' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!PLAN_PRICES[plan]) {
+    // Validate planType
+    if (!['basic', 'premium'].includes(planType)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid plan. Must be "basic" or "premium"' }),
+        JSON.stringify({ error: 'Invalid planType. Must be "basic" or "premium"' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Creating subscription for user: ${userId}, plan: ${plan}`);
+    // Validate planDuration
+    if (!['monthly', '6-month', 'annual'].includes(planDuration)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid planDuration. Must be "monthly", "6-month", or "annual"' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Check for existing active subscription
+    console.log(`Creating subscription for user: ${userId}, plan: ${planType}, duration: ${planDuration}`);
+
+    // Check for existing active/trial subscription
     const { data: existingSub } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', userId)
-      .eq('status', 'active')
+      .in('status', ['active', 'trial'])
       .maybeSingle();
 
-    if (existingSub?.mollie_subscription_id) {
+    if (existingSub) {
       console.log('User already has an active subscription');
       return new Response(
         JSON.stringify({ 
           error: 'User already has an active subscription',
-          existingSubscriptionId: existingSub.mollie_subscription_id 
+          existingSubscriptionId: existingSub.mollie_subscription_id,
+          status: existingSub.status,
+          trialRemainingDays: existingSub.remaining_trial_days
         }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Step 1: Get or create Mollie customer
+    // Get or create Mollie customer
     const { data: existingCustomer } = await supabase
       .from('mollie_customers')
       .select('mollie_customer_id')
@@ -122,7 +143,7 @@ serve(async (req) => {
       }
     }
 
-    // Step 2: Check for valid mandate
+    // Check for valid mandate
     const mandatesResponse = await fetch(
       `https://api.mollie.com/v2/customers/${mollieCustomerId}/mandates`,
       { headers: { 'Authorization': `Bearer ${mollieApiKey}` } }
@@ -133,12 +154,13 @@ serve(async (req) => {
       (m: any) => m.status === 'valid' || m.status === 'pending'
     );
 
-    // Step 3: If no mandate, create first payment
+    const planConfig = PLAN_PRICING[planType][planDuration];
+    const webhookUrl = `${supabaseUrl}/functions/v1/mollie-webhook`;
+    const redirectUrl = `${req.headers.get('origin') || 'https://ysqnwkysszqjwvnuqruk.lovable.app'}/subscription?setup=complete`;
+
+    // If no valid mandate, create first payment for card verification
     if (!validMandate) {
-      console.log('No valid mandate, creating first payment');
-      
-      const webhookUrl = `${supabaseUrl}/functions/v1/mollie-webhook`;
-      const redirectUrl = `${req.headers.get('origin') || 'https://ysqnwkysszqjwvnuqruk.lovable.app'}/subscription?setup=complete`;
+      console.log('No valid mandate, creating first payment for card verification');
 
       const firstPaymentResponse = await fetch('https://api.mollie.com/v2/payments', {
         method: 'POST',
@@ -150,12 +172,13 @@ serve(async (req) => {
           amount: { currency: 'EUR', value: '0.01' },
           customerId: mollieCustomerId,
           sequenceType: 'first',
-          description: 'Card verification for subscription',
+          description: `Card verification - ${planType} ${planDuration} plan`,
           redirectUrl: redirectUrl,
           webhookUrl: webhookUrl,
           metadata: {
             user_id: userId,
-            plan: plan,
+            plan_type: planType,
+            plan_duration: planDuration,
             payment_type: 'subscription_setup',
           },
         }),
@@ -168,28 +191,50 @@ serve(async (req) => {
         throw new Error(firstPaymentData.detail || 'Failed to create payment');
       }
 
-      // Store pending subscription
-      await supabase.from('subscriptions').insert({
-        user_id: userId,
-        mollie_subscription_id: `pending_${Date.now()}`,
-        plan: plan,
-        status: 'pending',
-      });
+      // Create trial subscription record
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
+
+      const { data: newSub, error: subError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: userId,
+          mollie_subscription_id: `pending_${Date.now()}`,
+          plan: planType,
+          plan_duration: planDuration,
+          status: 'trial',
+          remaining_trial_days: TRIAL_DAYS,
+          billing_amount: planConfig.amount,
+          currency: 'EUR',
+          subscription_start: new Date().toISOString(),
+          subscription_end: trialEndDate.toISOString(),
+        })
+        .select()
+        .single();
+
+      if (subError) {
+        console.error('Failed to create subscription record:', subError);
+        throw new Error('Failed to store subscription');
+      }
 
       return new Response(
         JSON.stringify({
-          status: 'pending_mandate',
+          subscriptionId: newSub.id,
+          status: 'trial',
+          trialRemainingDays: TRIAL_DAYS,
           paymentUrl: firstPaymentData._links.checkout.href,
-          message: 'Complete payment to activate subscription',
+          message: 'Complete card verification to start your free trial',
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Step 4: Create subscription
+    // Create subscription with valid mandate
     console.log('Creating subscription with mandate:', validMandate.id);
-    const planConfig = PLAN_PRICES[plan];
-    const webhookUrl = `${supabaseUrl}/functions/v1/mollie-webhook`;
+
+    // For trial, we create the subscription to start after trial ends
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
 
     const subscriptionResponse = await fetch(
       `https://api.mollie.com/v2/customers/${mollieCustomerId}/subscriptions`,
@@ -202,9 +247,14 @@ serve(async (req) => {
         body: JSON.stringify({
           amount: { currency: 'EUR', value: planConfig.amount },
           interval: planConfig.interval,
-          description: planConfig.description,
+          description: `${planType.charAt(0).toUpperCase() + planType.slice(1)} Plan - ${planDuration}`,
+          startDate: trialEndDate.toISOString().split('T')[0], // Start billing after trial
           webhookUrl: webhookUrl,
-          metadata: { user_id: userId, plan: plan },
+          metadata: {
+            user_id: userId,
+            plan_type: planType,
+            plan_duration: planDuration,
+          },
         }),
       }
     );
@@ -216,22 +266,29 @@ serve(async (req) => {
       throw new Error(subscriptionData.detail || 'Failed to create subscription');
     }
 
-    console.log('Subscription created:', subscriptionData.id);
+    console.log('Mollie subscription created:', subscriptionData.id);
 
-    // Step 5: Store subscription
-    const startDate = new Date(subscriptionData.startDate);
-    const endDate = subscriptionData.nextPaymentDate 
-      ? new Date(subscriptionData.nextPaymentDate)
-      : new Date(startDate.setMonth(startDate.getMonth() + 1));
+    // Calculate subscription end date based on plan duration
+    const subscriptionEndDate = new Date(trialEndDate);
+    subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + planConfig.months);
 
-    const { error: subError } = await supabase.from('subscriptions').insert({
-      user_id: userId,
-      mollie_subscription_id: subscriptionData.id,
-      plan: plan,
-      status: subscriptionData.status,
-      subscription_start: subscriptionData.startDate,
-      subscription_end: endDate.toISOString(),
-    });
+    // Store subscription details
+    const { data: newSub, error: subError } = await supabase
+      .from('subscriptions')
+      .insert({
+        user_id: userId,
+        mollie_subscription_id: subscriptionData.id,
+        plan: planType,
+        plan_duration: planDuration,
+        status: 'trial',
+        remaining_trial_days: TRIAL_DAYS,
+        billing_amount: planConfig.amount,
+        currency: 'EUR',
+        subscription_start: new Date().toISOString(),
+        subscription_end: subscriptionEndDate.toISOString(),
+      })
+      .select()
+      .single();
 
     if (subError) {
       console.error('Failed to store subscription:', subError);
@@ -241,10 +298,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         subscriptionId: subscriptionData.id,
-        status: subscriptionData.status,
-        plan: plan,
-        startDate: subscriptionData.startDate,
-        nextPaymentDate: subscriptionData.nextPaymentDate,
+        status: 'trial',
+        trialRemainingDays: TRIAL_DAYS,
+        planType: planType,
+        planDuration: planDuration,
+        billingAmount: planConfig.amount,
+        nextBillingDate: trialEndDate.toISOString().split('T')[0],
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
