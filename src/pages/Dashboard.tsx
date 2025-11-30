@@ -136,8 +136,8 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Phone Number Section */}
-        {!phone && (
+        {/* Phone Number Section - only show if phone is not set */}
+        {(!phone || phone.trim() === "") && (
           <div className="mb-8 p-6 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
