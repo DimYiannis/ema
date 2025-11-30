@@ -3,25 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
-import { Loader2, Phone, Check } from "lucide-react";
+import { Loader2, Phone } from "lucide-react";
 import { VoiceChatAgent } from "@/components/VoiceChatAgent";
-import { useToast } from "@/hooks/use-toast";
 
 // Replace with your ElevenLabs Agent ID
 const ELEVENLABS_AGENT_ID = "agent_9201kb7wdm61fz7r1qyzg1k3p80x";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [firstName, setFirstName] = useState<string | null>(null);
-  const [phone, setPhone] = useState<string>("");
-  const [phoneInput, setPhoneInput] = useState<string>("");
-  const [savingPhone, setSavingPhone] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -53,38 +47,10 @@ const Dashboard = () => {
   }, [navigate]);
 
   const fetchUserProfile = async (userId: string) => {
-    const { data, error } = await supabase.from("profiles").select("first_name, phone").eq("id", userId).maybeSingle();
+    const { data, error } = await supabase.from("profiles").select("first_name").eq("id", userId).maybeSingle();
 
     if (!error && data) {
       setFirstName(data.first_name);
-      setPhone(data.phone || "");
-      setPhoneInput(data.phone || "");
-    }
-  };
-
-  const handleSavePhone = async () => {
-    if (!session?.user?.id) return;
-    
-    setSavingPhone(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ phone: phoneInput })
-      .eq("id", session.user.id);
-
-    setSavingPhone(false);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save phone number",
-        variant: "destructive",
-      });
-    } else {
-      setPhone(phoneInput);
-      toast({
-        title: "Success",
-        description: "Phone number saved successfully",
-      });
     }
   };
 
@@ -136,39 +102,25 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Phone Number Section - only show if phone is not set */}
-        {(!phone || phone.trim() === "") && (
-          <div className="mb-8 p-6 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <Phone className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground">Add Your Phone Number</h3>
-                <p className="text-sm text-muted-foreground">Required for voice call features</p>
-              </div>
+        {/* Call Agent Section */}
+        <div className="mb-8 p-6 border-2 border-primary/30 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center animate-pulse">
+              <Phone className="w-6 h-6 text-primary-foreground" />
             </div>
-            <div className="flex gap-3">
-              <Input
-                type="tel"
-                placeholder="+31 6 12345678"
-                value={phoneInput}
-                onChange={(e) => setPhoneInput(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleSavePhone} disabled={savingPhone || !phoneInput.trim()}>
-                {savingPhone ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Save
-                  </>
-                )}
-              </Button>
+            <div className="flex-1">
+              <h3 className="font-semibold text-foreground text-lg">Call Our AI Assistant</h3>
+              <p className="text-sm text-muted-foreground">Speak directly with our voice agent anytime</p>
             </div>
+            <a 
+              href="tel:+3197010222286" 
+              className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold text-lg hover:bg-primary/90 transition-colors"
+            >
+              <Phone className="w-5 h-5" />
+              +31 97010222286
+            </a>
           </div>
-        )}
+        </div>
 
         {/* Quick Stats */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
