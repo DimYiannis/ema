@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { elevenLabsConfig } from '@/config/elevenlabs';
 
 export const useElevenLabs = () => {
@@ -15,32 +16,30 @@ export const useElevenLabs = () => {
     return "Hello, how can I help you today?";
   };
 
-  const generateSpeech = async (text: string): Promise<Blob> => {
-    const response = await fetch(
-      `${elevenLabsConfig.apiUrl}/${elevenLabsConfig.voiceId}`,
-      {
-        method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': elevenLabsConfig.apiKey,
-        },
-        body: JSON.stringify({
-          text,
-          model_id: elevenLabsConfig.model,
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.5,
-          },
-        }),
-      }
-    );
+  const generateSpeech = async (text: string, voiceId?: string): Promise<Blob> => {
+    const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+      body: {
+        text,
+        voiceId: voiceId || elevenLabsConfig.defaultVoiceId,
+        model: elevenLabsConfig.defaultModel,
+      },
+    });
 
-    if (!response.ok) {
-      throw new Error('Failed to generate speech');
+    if (error) {
+      throw new Error(error.message || 'Failed to generate speech');
     }
 
-    return await response.blob();
+    if (!data?.audio) {
+      throw new Error('No audio data returned');
+    }
+
+    // Convert base64 to blob
+    const binaryString = atob(data.audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: data.mimeType || 'audio/mpeg' });
   };
 
   const playAudio = useCallback(async (audioBlob: Blob) => {
@@ -111,6 +110,8 @@ export const useElevenLabs = () => {
     isPlaying,
     audioLevel,
     processAudio,
+    generateSpeech,
+    playAudio,
     replayLastAudio,
     hasLastAudio: !!lastAudioRef.current,
   };
