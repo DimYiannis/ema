@@ -41,18 +41,26 @@ const Register = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
-        // Only redirect if not on payment step
-        if (session && !showPaymentStep) {
-          navigate("/");
+        // Only redirect on actual sign in events, not on initial load
+        if (event === 'SIGNED_IN' && session && !showPaymentStep) {
+          navigate("/dashboard");
         }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    // Check for existing session - verify it's valid
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session && !showPaymentStep) {
-        navigate("/");
+        // Verify session is actually valid by checking user
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (user && !error) {
+          setSession(session);
+          navigate("/dashboard");
+        } else {
+          // Session is stale, sign out to clear it
+          await supabase.auth.signOut();
+          setSession(null);
+        }
       }
     });
 
