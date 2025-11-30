@@ -80,15 +80,6 @@ src/
 supabase/
 └── functions/           # Edge functions for backend logic
 ```
-
-## Environment Variables
-
-The following environment variables are automatically configured:
-
-- `VITE_SUPABASE_URL` - Backend URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` - API key
-- `VITE_SUPABASE_PROJECT_ID` - Project identifier
-
 ## Deployment
 
 Deploy via Lovable by clicking **Share → Publish** in the editor.
