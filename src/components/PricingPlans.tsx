@@ -13,6 +13,9 @@ interface PricingPlansProps {
   userId: string;
   userEmail: string;
   userName: string;
+  currentPlan?: string | null;
+  currentDuration?: string | null;
+  isUpgrade?: boolean;
   onSubscriptionCreated?: () => void;
 }
 
@@ -56,42 +59,69 @@ const PLANS = {
 type PlanType = "basic" | "premium";
 type PlanDuration = "monthly" | "6-month" | "annual";
 
-const PricingPlans = ({ userId, userEmail, userName, onSubscriptionCreated }: PricingPlansProps) => {
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>("basic");
-  const [selectedDuration, setSelectedDuration] = useState<PlanDuration>("monthly");
+const PricingPlans = ({ 
+  userId, 
+  userEmail, 
+  userName, 
+  currentPlan,
+  currentDuration,
+  isUpgrade = false,
+  onSubscriptionCreated 
+}: PricingPlansProps) => {
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>(
+    (currentPlan as PlanType) || "basic"
+  );
+  const [selectedDuration, setSelectedDuration] = useState<PlanDuration>(
+    (currentDuration as PlanDuration) || "monthly"
+  );
   const [isLoading, setIsLoading] = useState(false);
 
+  const isCurrentPlan = isUpgrade && selectedPlan === currentPlan && selectedDuration === currentDuration;
+
   const handleSubscribe = async () => {
+    if (isCurrentPlan) {
+      toast.info("This is your current plan");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      toast.info("Setting up your subscription...", {
-        description: "You'll be redirected to complete payment setup",
+      const endpoint = isUpgrade ? "update-mollie-subscription" : "create-mollie-subscription";
+      const body = isUpgrade 
+        ? {
+            userId,
+            newPlanType: selectedPlan,
+            newPlanDuration: selectedDuration,
+          }
+        : {
+            userId,
+            userName,
+            userEmail,
+            planType: selectedPlan,
+            planDuration: selectedDuration,
+          };
+
+      toast.info(isUpgrade ? "Updating your plan..." : "Setting up your subscription...", {
+        description: isUpgrade ? "Please wait while we update your subscription" : "You'll be redirected to complete payment setup",
       });
 
-      const { data, error } = await supabase.functions.invoke("create-mollie-subscription", {
-        body: {
-          userId,
-          userName,
-          userEmail,
-          planType: selectedPlan,
-          planDuration: selectedDuration,
-        },
-      });
+      const { data, error } = await supabase.functions.invoke(endpoint, { body });
 
       if (error) throw error;
 
       if (data.paymentUrl) {
-        // Redirect to Mollie checkout for card verification
         window.location.href = data.paymentUrl;
-      } else if (data.subscriptionId) {
-        toast.success("Subscription created!", {
-          description: `Your ${selectedPlan} plan is now active with a 14-day free trial.`,
+      } else if (data.success || data.subscriptionId) {
+        toast.success(isUpgrade ? "Plan updated!" : "Subscription created!", {
+          description: isUpgrade 
+            ? `Your plan has been changed to ${selectedPlan} (${selectedDuration}).`
+            : `Your ${selectedPlan} plan is now active with a 14-day free trial.`,
         });
         onSubscriptionCreated?.();
       }
     } catch (error) {
       console.error("Subscription error:", error);
-      toast.error("Failed to create subscription", {
+      toast.error(isUpgrade ? "Failed to update plan" : "Failed to create subscription", {
         description: error instanceof Error ? error.message : "Please try again later.",
       });
     } finally {
@@ -127,6 +157,7 @@ const PricingPlans = ({ userId, userEmail, userName, onSubscriptionCreated }: Pr
         {(Object.entries(PLANS) as [PlanType, typeof PLANS.basic][]).map(([planKey, plan], index) => {
           const pricing = plan.pricing[selectedDuration];
           const isSelected = selectedPlan === planKey;
+          const isCurrentUserPlan = isUpgrade && planKey === currentPlan && selectedDuration === currentDuration;
           const Icon = plan.icon;
 
           return (
@@ -144,7 +175,11 @@ const PricingPlans = ({ userId, userEmail, userName, onSubscriptionCreated }: Pr
                 }`}
                 onClick={() => setSelectedPlan(planKey)}
               >
-                {planKey === "premium" && (
+                {isCurrentUserPlan ? (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">
+                    Current Plan
+                  </Badge>
+                ) : planKey === "premium" && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-accent text-primary-foreground">
                     Most Popular
                   </Badge>
@@ -203,32 +238,44 @@ const PricingPlans = ({ userId, userEmail, userName, onSubscriptionCreated }: Pr
 
       {/* Trial Info & Subscribe Button */}
       <div className="text-center space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Start with a <span className="font-medium text-foreground">14-day free trial</span>.
-          Cancel anytime before it ends and you won't be charged.
-        </p>
+        {!isUpgrade && (
+          <p className="text-sm text-muted-foreground">
+            Start with a <span className="font-medium text-foreground">14-day free trial</span>.
+            Cancel anytime before it ends and you won't be charged.
+          </p>
+        )}
+
+        {isUpgrade && isCurrentPlan && (
+          <p className="text-sm text-muted-foreground">
+            This is your current plan. Select a different plan or duration to make changes.
+          </p>
+        )}
 
         <Button
           size="lg"
           onClick={handleSubscribe}
-          disabled={isLoading}
+          disabled={isLoading || isCurrentPlan}
           className="px-8"
         >
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Setting up...
+              {isUpgrade ? "Updating..." : "Setting up..."}
             </>
+          ) : isCurrentPlan ? (
+            "Current Plan"
+          ) : isUpgrade ? (
+            `Change to ${PLANS[selectedPlan].name} Plan`
           ) : (
-            <>
-              Start Free Trial - {PLANS[selectedPlan].name} Plan
-            </>
+            `Start Free Trial - ${PLANS[selectedPlan].name} Plan`
           )}
         </Button>
 
-        <p className="text-xs text-muted-foreground">
-          You'll be redirected to securely add your payment method
-        </p>
+        {!isUpgrade && (
+          <p className="text-xs text-muted-foreground">
+            You'll be redirected to securely add your payment method
+          </p>
+        )}
       </div>
     </div>
   );

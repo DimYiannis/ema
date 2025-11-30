@@ -555,6 +555,38 @@ const Subscription = () => {
             </motion.div>
           )}
 
+          {/* Change Plan Section - Show when user has active subscription */}
+          {paymentMethod && paymentMethod.is_active && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.35 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Change Plan</CardTitle>
+                  <CardDescription>Upgrade or change your subscription plan</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PricingPlans
+                    userId={session?.user.id || ""}
+                    userEmail={session?.user.email || ""}
+                    userName={session?.user.user_metadata?.first_name 
+                      ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name || ""}`.trim()
+                      : session?.user.email || ""}
+                    currentPlan={paymentMethod.plan}
+                    currentDuration="monthly"
+                    isUpgrade={true}
+                    onSubscriptionCreated={() => {
+                      fetchPaymentMethod();
+                      fetchPaymentHistory();
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
           {/* Payment History */}
           {paymentHistory.length > 0 && (
             <motion.div
