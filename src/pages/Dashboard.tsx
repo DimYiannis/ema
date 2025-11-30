@@ -5,48 +5,17 @@ import { Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { VoiceOrb } from "@/components/VoiceOrb";
-import AIGridBackground from "@/components/3d/AIGridBackground";
-import { WebhookConfig } from "@/components/WebhookConfig";
-import { useElevenLabsConversation } from "@/hooks/useElevenLabsConversation";
+import { VoiceChatAgent } from "@/components/VoiceChatAgent";
 
 // Replace with your ElevenLabs Agent ID
 const ELEVENLABS_AGENT_ID = "YOUR_AGENT_ID_HERE";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [firstName, setFirstName] = useState<string | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState<string>("");
-
-  const { 
-    startConversation, 
-    endConversation, 
-    isConnecting, 
-    status, 
-    isSpeaking 
-  } = useElevenLabsConversation({
-    agentId: ELEVENLABS_AGENT_ID,
-    onMessage: (message) => {
-      console.log('Agent message:', message);
-    },
-    onError: (error) => {
-      toast({
-        title: "Connection Error",
-        description: error,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const isConnected = status === 'connected';
-  const isRecording = isConnected && !isSpeaking;
-  const isPlaying = isSpeaking;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,7 +24,6 @@ const Dashboard = () => {
       if (!session) {
         navigate("/login");
       } else {
-        // Fetch user profile
         setTimeout(() => {
           fetchUserProfile(session.user.id);
         }, 0);
@@ -69,7 +37,6 @@ const Dashboard = () => {
       if (!session) {
         navigate("/login");
       } else {
-        // Fetch user profile
         setTimeout(() => {
           fetchUserProfile(session.user.id);
         }, 0);
@@ -88,21 +55,6 @@ const Dashboard = () => {
 
     if (!error && data) {
       setFirstName(data.first_name);
-      setPhoneNumber(data.phone);
-    }
-  };
-
-  const handleMainButton = async () => {
-    if (isConnected) {
-      // End conversation
-      await endConversation();
-    } else {
-      // Start conversation
-      try {
-        await startConversation();
-      } catch (error) {
-        console.error("Error starting conversation:", error);
-      }
     }
   };
 
@@ -115,9 +67,6 @@ const Dashboard = () => {
       });
     }, 100);
   };
-
-  // Simulate audio level based on speaking state
-  const audioLevel = isSpeaking ? 60 : (isConnected ? 20 : 0);
 
   if (loading) {
     return (
@@ -252,77 +201,26 @@ const Dashboard = () => {
             </Button>
           </div>
 
-          {/* EMA Voice Assistant Section */}
+          {/* Voice Chat Agent Section */}
           {showVoiceAssistant && (
-            <div
-              id="voice-assistant"
-              className="border-2 shadow-xl rounded-lg mb-12 animate-fade-in overflow-hidden relative"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-background via-accent/10 to-background"></div>
-              <AIGridBackground />
-              <div className="p-8 sm:p-12 relative z-10">
-                {/* Webhook Configuration */}
-                <WebhookConfig 
-                  webhookUrl={webhookUrl}
-                  onWebhookChange={setWebhookUrl}
-                />
-
-                {/* Reactive Voice Orb */}
-                <VoiceOrb
-                  audioLevel={audioLevel}
-                  isRecording={isRecording}
-                  isPlaying={isPlaying}
-                  tonePitch={0.5}
-                />
-
-                {/* Control Buttons */}
-                <div className="flex flex-col items-center gap-3 mt-6">
-                  <button
-                    onClick={handleMainButton}
-                    disabled={isConnecting}
-                    className={`
-                      group relative rounded-full px-6 py-2.5 text-sm font-medium
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                      transition-all duration-300 ease-out
-                      ${
-                        isConnected
-                          ? "bg-gradient-to-br from-destructive/90 to-destructive/70 text-destructive-foreground shadow-[0_0_20px_rgba(239,68,68,0.3),0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_0_25px_rgba(239,68,68,0.4),0_6px_20px_rgba(0,0,0,0.25)]"
-                          : "bg-gradient-to-br from-accent/90 to-accent/70 text-accent-foreground shadow-[0_0_15px_rgba(74,163,118,0.25),0_4px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_0_20px_rgba(74,163,118,0.3),0_6px_16px_rgba(0,0,0,0.25)]"
-                      }
-                      hover:scale-105 active:scale-95
-                    `}
-                  >
-                    <span className="relative z-10">
-                      {isConnecting ? "Connecting..." : isConnected ? "End Conversation" : "Start Conversation"}
-                    </span>
-                  </button>
-
-                  {/* Status Text */}
-                  <p className="text-xs text-center text-muted-foreground/70 mt-1">
-                    {isConnecting && "⏳ Connecting..."}
-                    {isConnected && isSpeaking && "🔊 Agent speaking..."}
-                    {isConnected && !isSpeaking && "🎤 Listening..."}
-                    {!isConnected && !isConnecting && "Press to start"}
-                  </p>
-                </div>
-              </div>
+            <div id="voice-assistant" className="border-t-2 animate-fade-in">
+              <VoiceChatAgent
+                agentId={ELEVENLABS_AGENT_ID}
+                onMessage={(message) => {
+                  console.log('Agent message:', message);
+                }}
+                onConversationStart={(id) => {
+                  console.log('Conversation started:', id);
+                }}
+                onConversationEnd={() => {
+                  console.log('Conversation ended');
+                }}
+                className="border-0 rounded-none"
+              />
             </div>
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1.05);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.1);
-            opacity: 0.9;
-          }
-        }
-      `}</style>
     </main>
   );
 };
