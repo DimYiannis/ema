@@ -1,6 +1,6 @@
 # Voice AI Assistant
 
-<img width="2870" height="1494" alt="image" src="https://github.com/user-attachments/assets/b54c5149-3f9d-4ed2-b2b1-4a3c3764b805" />
+<img width="2802" height="1418" alt="image" src="https://github.com/user-attachments/assets/57678110-3bc1-471e-bb2a-fd5f38deaa03" />
 
 A modern voice-powered AI assistant application built with React, featuring real-time conversational AI capabilities powered by ElevenLabs.
 <img width="2888" height="1418" alt="image" src="https://github.com/user-attachments/assets/c67e55b1-29bb-4c3d-af1c-b8e886659de1" />
