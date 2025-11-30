@@ -7,25 +7,46 @@ import Header from "@/components/Header";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { VoiceOrb } from "@/components/VoiceOrb";
-import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { useElevenLabs } from "@/hooks/useElevenLabs";
 import AIGridBackground from "@/components/3d/AIGridBackground";
 import { WebhookConfig } from "@/components/WebhookConfig";
-import { sendAudioToWebhook } from "@/utils/audioWebhook";
+import { useElevenLabsConversation } from "@/hooks/useElevenLabsConversation";
+
+// Replace with your ElevenLabs Agent ID
+const ELEVENLABS_AGENT_ID = "YOUR_AGENT_ID_HERE";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [firstName, setFirstName] = useState<string | null>(null);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState<string>("");
 
-  const { isRecording, audioLevel: recordingLevel, tonePitch, startRecording, stopRecording } = useAudioRecorder();
-  const { isPlaying, audioLevel: playbackLevel, processAudio, replayLastAudio, hasLastAudio } = useElevenLabs();
+  const { 
+    startConversation, 
+    endConversation, 
+    isConnecting, 
+    status, 
+    isSpeaking 
+  } = useElevenLabsConversation({
+    agentId: ELEVENLABS_AGENT_ID,
+    onMessage: (message) => {
+      console.log('Agent message:', message);
+    },
+    onError: (error) => {
+      toast({
+        title: "Connection Error",
+        description: error,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const isConnected = status === 'connected';
+  const isRecording = isConnected && !isSpeaking;
+  const isPlaying = isSpeaking;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -72,88 +93,21 @@ const Dashboard = () => {
   };
 
   const handleMainButton = async () => {
-    if (isRecording) {
-      // Stop recording
-      try {
-        setIsProcessing(true);
-        const audioBlob = await stopRecording();
-
-        toast({
-          title: "Processing...",
-          description: "Converting your speech to text",
-        });
-
-        // Send to webhook if configured
-        if (webhookUrl) {
-          toast({
-            title: "Sending audio...",
-            description: "Sending to external webhook",
-          });
-          
-          const webhookResult = await sendAudioToWebhook(audioBlob, webhookUrl, phoneNumber);
-          
-          if (webhookResult.success) {
-            toast({
-              title: "Audio sent!",
-              description: "Successfully sent to webhook",
-            });
-          } else {
-            toast({
-              title: "Webhook error",
-              description: webhookResult.error || "Failed to send audio",
-              variant: "destructive",
-            });
-          }
-        }
-
-        await processAudio(audioBlob);
-
-        toast({
-          title: "Response ready",
-          description: "Playing EMA's response",
-        });
-      } catch (error) {
-        console.error("Error processing audio:", error);
-        toast({
-          title: "Error",
-          description: "Failed to process your recording",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessing(false);
-      }
+    if (isConnected) {
+      // End conversation
+      await endConversation();
     } else {
-      // Start recording
+      // Start conversation
       try {
-        await startRecording();
-        toast({
-          title: "Recording started",
-          description: "Speak now...",
-        });
+        await startConversation();
       } catch (error) {
-        console.error("Error starting recording:", error);
-        toast({
-          title: "Error",
-          description: "Failed to access microphone",
-          variant: "destructive",
-        });
+        console.error("Error starting conversation:", error);
       }
-    }
-  };
-
-  const handleReplay = () => {
-    if (hasLastAudio) {
-      replayLastAudio();
-      toast({
-        title: "Replaying",
-        description: "Playing last response",
-      });
     }
   };
 
   const handleStartJourney = () => {
     setShowVoiceAssistant(true);
-    // Scroll to voice assistant section after a brief delay
     setTimeout(() => {
       document.getElementById("voice-assistant")?.scrollIntoView({
         behavior: "smooth",
@@ -161,6 +115,9 @@ const Dashboard = () => {
       });
     }, 100);
   };
+
+  // Simulate audio level based on speaking state
+  const audioLevel = isSpeaking ? 60 : (isConnected ? 20 : 0);
 
   if (loading) {
     return (
@@ -173,8 +130,6 @@ const Dashboard = () => {
   if (!session) {
     return null;
   }
-
-  const audioLevel = isRecording ? recordingLevel : playbackLevel;
 
   return (
     <main className="min-h-screen bg-background font-sans">
@@ -317,20 +272,20 @@ const Dashboard = () => {
                   audioLevel={audioLevel}
                   isRecording={isRecording}
                   isPlaying={isPlaying}
-                  tonePitch={tonePitch}
+                  tonePitch={0.5}
                 />
 
                 {/* Control Buttons */}
                 <div className="flex flex-col items-center gap-3 mt-6">
                   <button
                     onClick={handleMainButton}
-                    disabled={isProcessing || isPlaying}
+                    disabled={isConnecting}
                     className={`
                       group relative rounded-full px-6 py-2.5 text-sm font-medium
                       disabled:opacity-50 disabled:cursor-not-allowed
                       transition-all duration-300 ease-out
                       ${
-                        isRecording
+                        isConnected
                           ? "bg-gradient-to-br from-destructive/90 to-destructive/70 text-destructive-foreground shadow-[0_0_20px_rgba(239,68,68,0.3),0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_0_25px_rgba(239,68,68,0.4),0_6px_20px_rgba(0,0,0,0.25)]"
                           : "bg-gradient-to-br from-accent/90 to-accent/70 text-accent-foreground shadow-[0_0_15px_rgba(74,163,118,0.25),0_4px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_0_20px_rgba(74,163,118,0.3),0_6px_16px_rgba(0,0,0,0.25)]"
                       }
@@ -338,34 +293,16 @@ const Dashboard = () => {
                     `}
                   >
                     <span className="relative z-10">
-                      {isProcessing ? "Processing..." : isRecording ? "Stop Recording" : "Talk to Me"}
+                      {isConnecting ? "Connecting..." : isConnected ? "End Conversation" : "Start Conversation"}
                     </span>
-                  </button>
-
-                  <button
-                    onClick={handleReplay}
-                    disabled={!hasLastAudio || isRecording || isPlaying}
-                    className="
-                      group px-5 py-2 rounded-full text-xs font-medium
-                      bg-secondary/60 hover:bg-secondary/80 
-                      text-secondary-foreground/80 backdrop-blur-sm
-                      shadow-[0_2px_10px_rgba(0,0,0,0.15)] 
-                      hover:shadow-[0_4px_15px_rgba(0,0,0,0.2)]
-                      transition-all duration-300 
-                      hover:scale-105 active:scale-95
-                      disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:scale-100
-                      border border-border/20
-                    "
-                  >
-                    <span className="relative z-10">Replay</span>
                   </button>
 
                   {/* Status Text */}
                   <p className="text-xs text-center text-muted-foreground/70 mt-1">
-                    {isRecording && "🎤 Recording..."}
-                    {isPlaying && "🔊 Playing..."}
-                    {!isRecording && !isPlaying && !isProcessing && "Press to start"}
-                    {isProcessing && "⚙️ Processing..."}
+                    {isConnecting && "⏳ Connecting..."}
+                    {isConnected && isSpeaking && "🔊 Agent speaking..."}
+                    {isConnected && !isSpeaking && "🎤 Listening..."}
+                    {!isConnected && !isConnecting && "Press to start"}
                   </p>
                 </div>
               </div>
