@@ -108,7 +108,7 @@ function AnimatedOrb() {
 
 export default function HeroScene() {
   return (
-    <div className="absolute inset-0 z-10">
+    <div className="absolute inset-0 z-10 pointer-events-none md:pointer-events-auto">
       <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
         <ambientLight intensity={0.2} />
         <pointLight position={[10, 10, 10]} intensity={2} color="hsl(var(--accent))" />
