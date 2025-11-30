@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.migrate-external-user]
 verify_jwt = false
+
+[functions.create-mollie-subscription]
+verify_jwt = false
