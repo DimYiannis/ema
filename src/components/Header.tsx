@@ -76,7 +76,17 @@ const Header = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Logout error:", error);
+        // Even if there's an error, clear local state and redirect
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+    // Always clear session and navigate regardless of error
+    setSession(null);
     toast.success("Logged out", {
       description: "You've been successfully logged out.",
     });
