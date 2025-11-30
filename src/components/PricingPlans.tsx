@@ -24,30 +24,32 @@ const PLANS = {
     name: "Basic",
     icon: Zap,
     description: "Perfect for getting started",
+    minutes: 300,
     features: [
       "AI Voice Assistant",
-      "Up to 100 conversations/month",
+      "300 minutes of voice calls/month",
       "Standard support",
       "Basic analytics",
     ],
+    availableDurations: ["monthly"] as PlanDuration[],
     pricing: {
       monthly: { amount: "9.99", label: "€9.99/month" },
-      "6-month": { amount: "49.99", label: "€49.99/6 months", savings: "Save €10" },
-      annual: { amount: "89.99", label: "€89.99/year", savings: "Save €30" },
     },
   },
   premium: {
     name: "Premium",
     icon: Sparkles,
     description: "For power users who need more",
+    minutes: 1000,
     features: [
       "Everything in Basic",
-      "Unlimited conversations",
+      "1000 minutes of voice calls/month",
       "Priority support",
       "Advanced analytics",
+      "Unused minutes carryover (annual)",
       "Custom voice options",
-      "API access",
     ],
+    availableDurations: ["monthly", "6-month", "annual"] as PlanDuration[],
     pricing: {
       monthly: { amount: "19.99", label: "€19.99/month" },
       "6-month": { amount: "99.99", label: "€99.99/6 months", savings: "Save €20" },
@@ -56,8 +58,14 @@ const PLANS = {
   },
 };
 
+const TRIAL_DAYS = 7;
+
 type PlanType = "basic" | "premium";
 type PlanDuration = "monthly" | "6-month" | "annual";
+
+const getDurationsForPlan = (planType: PlanType): PlanDuration[] => {
+  return PLANS[planType].availableDurations;
+};
 
 const PricingPlans = ({ 
   userId, 
@@ -77,6 +85,16 @@ const PricingPlans = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const isCurrentPlan = isUpgrade && selectedPlan === currentPlan && selectedDuration === currentDuration;
+  const availableDurations = getDurationsForPlan(selectedPlan);
+
+  // Reset duration when switching plans if current duration isn't available
+  const handlePlanSelect = (planKey: PlanType) => {
+    setSelectedPlan(planKey);
+    const planDurations = getDurationsForPlan(planKey);
+    if (!planDurations.includes(selectedDuration)) {
+      setSelectedDuration("monthly");
+    }
+  };
 
   const handleSubscribe = async () => {
     if (isCurrentPlan) {
@@ -112,10 +130,10 @@ const PricingPlans = ({
       if (data.paymentUrl) {
         window.location.href = data.paymentUrl;
       } else if (data.success || data.subscriptionId) {
-        toast.success(isUpgrade ? "Plan updated!" : "Subscription created!", {
+      toast.success(isUpgrade ? "Plan updated!" : "Subscription created!", {
           description: isUpgrade 
             ? `Your plan has been changed to ${selectedPlan} (${selectedDuration}).`
-            : `Your ${selectedPlan} plan is now active with a 14-day free trial.`,
+            : `Your ${selectedPlan} plan is now active with a ${TRIAL_DAYS}-day free trial.`,
         });
         onSubscriptionCreated?.();
       }
@@ -131,31 +149,35 @@ const PricingPlans = ({
 
   return (
     <div className="space-y-6">
-      {/* Duration Selection */}
-      <div className="flex justify-center">
-        <RadioGroup
-          value={selectedDuration}
-          onValueChange={(v) => setSelectedDuration(v as PlanDuration)}
-          className="flex gap-2 p-1 bg-muted rounded-lg"
-        >
-          {(["monthly", "6-month", "annual"] as PlanDuration[]).map((duration) => (
-            <div key={duration}>
-              <RadioGroupItem value={duration} id={duration} className="sr-only peer" />
-              <Label
-                htmlFor={duration}
-                className="px-4 py-2 rounded-md cursor-pointer text-sm font-medium transition-all peer-data-[state=checked]:bg-background peer-data-[state=checked]:shadow-sm peer-data-[state=checked]:text-foreground text-muted-foreground hover:text-foreground"
-              >
-                {duration === "monthly" ? "Monthly" : duration === "6-month" ? "6 Months" : "Annual"}
-              </Label>
-            </div>
-          ))}
-        </RadioGroup>
-      </div>
+      {/* Duration Selection - Only show if Premium is selected */}
+      {selectedPlan === "premium" && (
+        <div className="flex justify-center">
+          <RadioGroup
+            value={selectedDuration}
+            onValueChange={(v) => setSelectedDuration(v as PlanDuration)}
+            className="flex gap-2 p-1 bg-muted rounded-lg"
+          >
+            {availableDurations.map((duration) => (
+              <div key={duration}>
+                <RadioGroupItem value={duration} id={duration} className="sr-only peer" />
+                <Label
+                  htmlFor={duration}
+                  className="px-4 py-2 rounded-md cursor-pointer text-sm font-medium transition-all peer-data-[state=checked]:bg-background peer-data-[state=checked]:shadow-sm peer-data-[state=checked]:text-foreground text-muted-foreground hover:text-foreground"
+                >
+                  {duration === "monthly" ? "Monthly" : duration === "6-month" ? "6 Months" : "Annual"}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </div>
+      )}
 
       {/* Plan Cards */}
       <div className="grid md:grid-cols-2 gap-6">
         {(Object.entries(PLANS) as [PlanType, typeof PLANS.basic][]).map(([planKey, plan], index) => {
-          const pricing = plan.pricing[selectedDuration];
+          // Use the selected duration for premium, always monthly for basic
+          const displayDuration = planKey === "basic" ? "monthly" : selectedDuration;
+          const pricing = plan.pricing[displayDuration as keyof typeof plan.pricing];
           const isSelected = selectedPlan === planKey;
           const isCurrentUserPlan = isUpgrade && planKey === currentPlan && selectedDuration === currentDuration;
           const Icon = plan.icon;
@@ -173,7 +195,7 @@ const PricingPlans = ({
                     ? "border-primary ring-2 ring-primary/20"
                     : "hover:border-primary/50"
                 }`}
-                onClick={() => setSelectedPlan(planKey)}
+                onClick={() => handlePlanSelect(planKey)}
               >
                 {isCurrentUserPlan ? (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-accent-foreground">
@@ -191,25 +213,30 @@ const PricingPlans = ({
                   </div>
                   <CardTitle className="text-xl">{plan.name}</CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
+                  <p className="text-sm font-medium text-primary mt-1">{plan.minutes} minutes/month</p>
                 </CardHeader>
 
                 <CardContent className="space-y-6">
                   {/* Pricing */}
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-foreground">
-                      €{pricing.amount}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedDuration === "monthly"
-                        ? "per month"
-                        : selectedDuration === "6-month"
-                        ? "every 6 months"
-                        : "per year"}
-                    </div>
-                    {"savings" in pricing && pricing.savings && (
-                      <Badge variant="secondary" className="mt-2 bg-accent/20 text-accent">
-                        {pricing.savings}
-                      </Badge>
+                    {pricing && (
+                      <>
+                        <div className="text-3xl font-bold text-foreground">
+                          €{pricing.amount}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {displayDuration === "monthly"
+                            ? "per month"
+                            : displayDuration === "6-month"
+                            ? "every 6 months"
+                            : "per year"}
+                        </div>
+                        {"savings" in pricing && (pricing as { savings?: string }).savings && (
+                          <Badge variant="secondary" className="mt-2 bg-accent/20 text-accent">
+                            {(pricing as { savings?: string }).savings}
+                          </Badge>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -240,7 +267,7 @@ const PricingPlans = ({
       <div className="text-center space-y-4">
         {!isUpgrade && (
           <p className="text-sm text-muted-foreground">
-            Start with a <span className="font-medium text-foreground">14-day free trial</span>.
+            Start with a <span className="font-medium text-foreground">{TRIAL_DAYS}-day free trial</span>.
             Cancel anytime before it ends and you won't be charged.
           </p>
         )}
