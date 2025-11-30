@@ -17,10 +17,12 @@ import {
   AlertCircle,
   ArrowLeft,
   Loader2,
-  Shield
+  Shield,
+  Bell
 } from "lucide-react";
 import Header from "@/components/Header";
 import PricingPlans from "@/components/PricingPlans";
+import UsageCard from "@/components/UsageCard";
 import { motion } from "framer-motion";
 
 interface PaymentMethod {
@@ -58,6 +60,13 @@ const Subscription = () => {
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [usageData, setUsageData] = useState<{
+    minutesUsed: number;
+    minutesLimit: number;
+    minutesCarriedOver: number;
+    billingPeriodEnd?: string;
+  } | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,8 +95,59 @@ const Subscription = () => {
     if (session) {
       fetchPaymentMethod();
       fetchPaymentHistory();
+      fetchUsageData();
+      fetchNotifications();
     }
   }, [session]);
+
+  const fetchUsageData = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-usage-status');
+      
+      if (error) {
+        console.error('Error fetching usage:', error);
+        return;
+      }
+
+      if (data?.usage) {
+        setUsageData({
+          minutesUsed: data.usage.minutesUsed,
+          minutesLimit: data.usage.minutesLimit,
+          minutesCarriedOver: data.usage.minutesCarriedOver,
+          billingPeriodEnd: data.usage.billingPeriodEnd,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching usage data:', error);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', session?.user.id)
+        .eq('read', false)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const markNotificationRead = async (id: string) => {
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', id);
+    
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   const fetchPaymentMethod = async () => {
     setIsLoading(true);
@@ -360,6 +420,58 @@ const Subscription = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Notifications */}
+          {notifications.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.12 }}
+            >
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Bell className="w-5 h-5 text-amber-500" />
+                    Notifications
+                    <Badge variant="secondary" className="ml-auto">
+                      {notifications.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {notifications.map((notif) => (
+                    <div 
+                      key={notif.id} 
+                      className="flex items-start justify-between gap-3 p-3 rounded-lg bg-background border"
+                    >
+                      <div>
+                        <p className="font-medium text-sm">{notif.title}</p>
+                        <p className="text-sm text-muted-foreground">{notif.message}</p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => markNotificationRead(notif.id)}
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Usage Card - Show when user has subscription */}
+          {paymentMethod && usageData && (
+            <UsageCard
+              minutesUsed={usageData.minutesUsed}
+              minutesLimit={usageData.minutesLimit}
+              minutesCarriedOver={usageData.minutesCarriedOver}
+              billingPeriodEnd={usageData.billingPeriodEnd}
+              plan={paymentMethod.plan || undefined}
+            />
+          )}
 
           {/* Plan Selection - Show when no payment method */}
           {!paymentMethod && (
@@ -685,11 +797,11 @@ const Subscription = () => {
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>AI Voice Assistant</span>
+                        <span className="font-medium">300 voice minutes/month</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Up to 100 conversations/month</span>
+                        <span>AI Voice Assistant</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-accent" />
@@ -719,11 +831,11 @@ const Subscription = () => {
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Everything in Basic</span>
+                        <span className="font-medium">1000 voice minutes/month</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-accent" />
-                        <span>Unlimited conversations</span>
+                        <span>Unused minutes rollover (annual)</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-accent" />
