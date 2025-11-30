@@ -20,7 +20,6 @@ const PLAN_PRICES = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -47,7 +46,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate plan
     if (!PLAN_PRICES[plan]) {
       return new Response(
         JSON.stringify({ error: 'Invalid plan. Must be "basic" or "premium"' }),
@@ -58,26 +56,32 @@ serve(async (req) => {
     console.log(`Creating subscription for user: ${userId}, plan: ${plan}`);
 
     // Check for existing active subscription
-    const { data: existingPayment } = await supabase
-      .from('payment_methods')
+    const { data: existingSub } = await supabase
+      .from('subscriptions')
       .select('*')
       .eq('user_id', userId)
-      .eq('subscription_status', 'active')
-      .single();
+      .eq('status', 'active')
+      .maybeSingle();
 
-    if (existingPayment?.mollie_subscription_id) {
+    if (existingSub?.mollie_subscription_id) {
       console.log('User already has an active subscription');
       return new Response(
         JSON.stringify({ 
           error: 'User already has an active subscription',
-          existingSubscriptionId: existingPayment.mollie_subscription_id 
+          existingSubscriptionId: existingSub.mollie_subscription_id 
         }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Step 1: Get or create Mollie customer
-    let mollieCustomerId = existingPayment?.mollie_customer_id;
+    const { data: existingCustomer } = await supabase
+      .from('mollie_customers')
+      .select('mollie_customer_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    let mollieCustomerId = existingCustomer?.mollie_customer_id;
 
     if (!mollieCustomerId) {
       console.log('Creating new Mollie customer');
@@ -103,14 +107,25 @@ serve(async (req) => {
 
       mollieCustomerId = customerData.id;
       console.log('Mollie customer created:', mollieCustomerId);
+
+      // Store in mollie_customers table
+      const { error: customerDbError } = await supabase
+        .from('mollie_customers')
+        .insert({
+          user_id: userId,
+          mollie_customer_id: mollieCustomerId,
+        });
+
+      if (customerDbError) {
+        console.error('Failed to store customer:', customerDbError);
+        throw new Error('Failed to store customer information');
+      }
     }
 
-    // Step 2: Check if customer has a valid mandate
+    // Step 2: Check for valid mandate
     const mandatesResponse = await fetch(
       `https://api.mollie.com/v2/customers/${mollieCustomerId}/mandates`,
-      {
-        headers: { 'Authorization': `Bearer ${mollieApiKey}` },
-      }
+      { headers: { 'Authorization': `Bearer ${mollieApiKey}` } }
     );
 
     const mandatesData = await mandatesResponse.json();
@@ -118,9 +133,9 @@ serve(async (req) => {
       (m: any) => m.status === 'valid' || m.status === 'pending'
     );
 
-    // Step 3: If no valid mandate, create a first payment to establish one
+    // Step 3: If no mandate, create first payment
     if (!validMandate) {
-      console.log('No valid mandate found, creating first payment for mandate');
+      console.log('No valid mandate, creating first payment');
       
       const webhookUrl = `${supabaseUrl}/functions/v1/mollie-webhook`;
       const redirectUrl = `${req.headers.get('origin') || 'https://ysqnwkysszqjwvnuqruk.lovable.app'}/subscription?setup=complete`;
@@ -153,23 +168,14 @@ serve(async (req) => {
         throw new Error(firstPaymentData.detail || 'Failed to create payment');
       }
 
-      // Store pending subscription info
-      const { error: dbError } = await supabase
-        .from('payment_methods')
-        .upsert({
-          user_id: userId,
-          mollie_customer_id: mollieCustomerId,
-          plan: plan,
-          subscription_status: 'pending',
-          subscription_start: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+      // Store pending subscription
+      await supabase.from('subscriptions').insert({
+        user_id: userId,
+        mollie_subscription_id: `pending_${Date.now()}`,
+        plan: plan,
+        status: 'pending',
+      });
 
-      if (dbError) {
-        console.error('Database error:', dbError);
-        throw new Error('Failed to store subscription info');
-      }
-
-      console.log('First payment created, redirecting to checkout');
       return new Response(
         JSON.stringify({
           status: 'pending_mandate',
@@ -180,7 +186,7 @@ serve(async (req) => {
       );
     }
 
-    // Step 4: Create the subscription with valid mandate
+    // Step 4: Create subscription
     console.log('Creating subscription with mandate:', validMandate.id);
     const planConfig = PLAN_PRICES[plan];
     const webhookUrl = `${supabaseUrl}/functions/v1/mollie-webhook`;
@@ -198,10 +204,7 @@ serve(async (req) => {
           interval: planConfig.interval,
           description: planConfig.description,
           webhookUrl: webhookUrl,
-          metadata: {
-            user_id: userId,
-            plan: plan,
-          },
+          metadata: { user_id: userId, plan: plan },
         }),
       }
     );
@@ -215,29 +218,24 @@ serve(async (req) => {
 
     console.log('Subscription created:', subscriptionData.id);
 
-    // Step 5: Store subscription details in database
+    // Step 5: Store subscription
     const startDate = new Date(subscriptionData.startDate);
     const endDate = subscriptionData.nextPaymentDate 
       ? new Date(subscriptionData.nextPaymentDate)
       : new Date(startDate.setMonth(startDate.getMonth() + 1));
 
-    const { error: updateError } = await supabase
-      .from('payment_methods')
-      .upsert({
-        user_id: userId,
-        mollie_customer_id: mollieCustomerId,
-        mollie_subscription_id: subscriptionData.id,
-        mollie_mandate_id: validMandate.id,
-        plan: plan,
-        subscription_status: subscriptionData.status,
-        subscription_start: subscriptionData.startDate,
-        subscription_end: endDate.toISOString(),
-        is_active: true,
-      }, { onConflict: 'user_id' });
+    const { error: subError } = await supabase.from('subscriptions').insert({
+      user_id: userId,
+      mollie_subscription_id: subscriptionData.id,
+      plan: plan,
+      status: subscriptionData.status,
+      subscription_start: subscriptionData.startDate,
+      subscription_end: endDate.toISOString(),
+    });
 
-    if (updateError) {
-      console.error('Database update error:', updateError);
-      throw new Error('Failed to update subscription info');
+    if (subError) {
+      console.error('Failed to store subscription:', subError);
+      throw new Error('Failed to store subscription');
     }
 
     return new Response(

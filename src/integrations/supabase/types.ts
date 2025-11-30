@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      mollie_customers: {
+        Row: {
+          created_at: string
+          id: string
+          mollie_customer_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mollie_customer_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mollie_customer_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_history: {
         Row: {
           amount: string | null
@@ -116,6 +137,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          email: string | null
           first_name: string | null
           id: string
           last_name: string | null
@@ -124,6 +146,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
@@ -132,11 +155,48 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          mollie_subscription_id: string
+          plan: string
+          status: string
+          subscription_end: string | null
+          subscription_start: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mollie_subscription_id: string
+          plan: string
+          status?: string
+          subscription_end?: string | null
+          subscription_start?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mollie_subscription_id?: string
+          plan?: string
+          status?: string
+          subscription_end?: string | null
+          subscription_start?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
