@@ -1,73 +1,82 @@
-# Welcome to your Lovable project
+# Voice AI Assistant
 
-## Project info
+A modern voice-powered AI assistant application built with React, featuring real-time conversational AI capabilities powered by ElevenLabs.
 
-**URL**: https://lovable.dev/projects/451314f8-6a5f-4190-aac2-87994609d46f
+## Features
 
-## How can I edit this code?
+- **Voice Chat Agent** - Real-time voice conversations with an AI assistant using ElevenLabs Conversational AI
+- **Phone Call Support** - Call the AI assistant directly via phone (+31 97010222286)
+- **User Authentication** - Secure email/password authentication
+- **Subscription Management** - Tiered subscription plans with minute-based usage tracking
+  - Basic Plan: 300 minutes/month at €9.99
+  - Premium Plan: 1000 minutes/month with monthly/6-month/annual options
+- **7-Day Free Trial** - All new users get a free trial period
+- **Payment Processing** - Integrated with Mollie Payments for secure transactions
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **3D Graphics**: Three.js, React Three Fiber
+- **Animations**: Framer Motion
+- **Backend**: Lovable Cloud (Supabase)
+- **Voice AI**: ElevenLabs Conversational AI
+- **Payments**: Mollie
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/451314f8-6a5f-4190-aac2-87994609d46f) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js (v18 or higher)
+- npm or bun
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+# Clone the repository
+git clone <your-repo-url>
 
-Follow these steps:
+# Navigate to project directory
+cd <project-name>
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Install dependencies
+npm install
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project Structure
 
-**Use GitHub Codespaces**
+```
+src/
+├── components/
+│   ├── 3d/              # Three.js 3D components
+│   ├── ui/              # shadcn/ui components
+│   └── ...              # Feature components
+├── hooks/               # Custom React hooks
+├── pages/               # Page components
+├── integrations/        # External service integrations
+└── utils/               # Utility functions
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+supabase/
+└── functions/           # Edge functions for backend logic
+```
 
-## What technologies are used for this project?
+## Environment Variables
 
-This project is built with:
+The following environment variables are automatically configured:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `VITE_SUPABASE_URL` - Backend URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` - API key
+- `VITE_SUPABASE_PROJECT_ID` - Project identifier
 
-## How can I deploy this project?
+## Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/451314f8-6a5f-4190-aac2-87994609d46f) and click on Share -> Publish.
+Deploy via Lovable by clicking **Share → Publish** in the editor.
 
-## Can I connect a custom domain to my Lovable project?
+## License
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Private project - All rights reserved.
