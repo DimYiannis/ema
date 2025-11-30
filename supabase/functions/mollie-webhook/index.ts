@@ -123,6 +123,7 @@ serve(async (req) => {
                   card_last_four: cardDetails?.cardNumber?.slice(-4) || null,
                   card_expiry: cardDetails?.cardExpiryDate || null,
                   is_active: true,
+                  subscription_status: 'active',
                 })
                 .eq('user_id', userId);
 
@@ -130,6 +131,22 @@ serve(async (req) => {
                 console.error('Error updating payment method:', updateError);
               } else {
                 console.log('Payment method updated successfully with mandate');
+              }
+
+              // Also update subscription status to active
+              const { error: subUpdateError } = await supabase
+                .from('subscriptions')
+                .update({
+                  status: 'active',
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('user_id', userId)
+                .in('status', ['trial', 'pending']);
+
+              if (subUpdateError) {
+                console.error('Error updating subscription status:', subUpdateError);
+              } else {
+                console.log('Subscription status updated to active');
               }
             }
           }
