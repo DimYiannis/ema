@@ -156,7 +156,7 @@ serve(async (req) => {
 
     const planConfig = PLAN_PRICING[planType][planDuration];
     const webhookUrl = `${supabaseUrl}/functions/v1/mollie-webhook`;
-    const baseRedirectUrl = req.headers.get('origin') || 'https://ysqnwkysszqjwvnuqruk.lovable.app';
+    const baseRedirectUrl = req.headers.get('origin') || 'http://localhost:8080';
     const redirectUrl = `${baseRedirectUrl}/subscription?status=paid`;
 
     // If no valid mandate, create first payment for card verification
