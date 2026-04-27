@@ -7,34 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
-      mollie_customers: {
-        Row: {
-          created_at: string
-          id: string
-          mollie_customer_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          mollie_customer_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          mollie_customer_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       notifications: {
         Row: {
           created_at: string
@@ -61,105 +38,6 @@ export type Database = {
           read?: boolean
           title?: string
           type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      payment_history: {
-        Row: {
-          amount: string | null
-          created_at: string
-          currency: string | null
-          description: string | null
-          id: string
-          mollie_payment_id: string
-          paid_at: string | null
-          payment_type: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount?: string | null
-          created_at?: string
-          currency?: string | null
-          description?: string | null
-          id?: string
-          mollie_payment_id: string
-          paid_at?: string | null
-          payment_type?: string | null
-          status: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: string | null
-          created_at?: string
-          currency?: string | null
-          description?: string | null
-          id?: string
-          mollie_payment_id?: string
-          paid_at?: string | null
-          payment_type?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      payment_methods: {
-        Row: {
-          card_expiry: string | null
-          card_last_four: string | null
-          created_at: string
-          id: string
-          is_active: boolean | null
-          mollie_customer_id: string | null
-          mollie_mandate_id: string | null
-          mollie_subscription_id: string | null
-          payment_method_type: string | null
-          plan: string | null
-          subscription_end: string | null
-          subscription_start: string | null
-          subscription_status: string | null
-          trial_end_date: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          card_expiry?: string | null
-          card_last_four?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          mollie_customer_id?: string | null
-          mollie_mandate_id?: string | null
-          mollie_subscription_id?: string | null
-          payment_method_type?: string | null
-          plan?: string | null
-          subscription_end?: string | null
-          subscription_start?: string | null
-          subscription_status?: string | null
-          trial_end_date?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          card_expiry?: string | null
-          card_last_four?: string | null
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          mollie_customer_id?: string | null
-          mollie_mandate_id?: string | null
-          mollie_subscription_id?: string | null
-          payment_method_type?: string | null
-          plan?: string | null
-          subscription_end?: string | null
-          subscription_start?: string | null
-          subscription_status?: string | null
-          trial_end_date?: string | null
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -194,116 +72,12 @@ export type Database = {
         }
         Relationships: []
       }
-      subscriptions: {
-        Row: {
-          billing_amount: string | null
-          created_at: string
-          currency: string | null
-          id: string
-          minutes_limit: number | null
-          mollie_subscription_id: string
-          plan: string
-          plan_duration: string | null
-          remaining_trial_days: number | null
-          status: string
-          subscription_end: string | null
-          subscription_start: string | null
-          trial_days: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          billing_amount?: string | null
-          created_at?: string
-          currency?: string | null
-          id?: string
-          minutes_limit?: number | null
-          mollie_subscription_id: string
-          plan: string
-          plan_duration?: string | null
-          remaining_trial_days?: number | null
-          status?: string
-          subscription_end?: string | null
-          subscription_start?: string | null
-          trial_days?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          billing_amount?: string | null
-          created_at?: string
-          currency?: string | null
-          id?: string
-          minutes_limit?: number | null
-          mollie_subscription_id?: string
-          plan?: string
-          plan_duration?: string | null
-          remaining_trial_days?: number | null
-          status?: string
-          subscription_end?: string | null
-          subscription_start?: string | null
-          trial_days?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      usage_tracking: {
-        Row: {
-          billing_period_end: string | null
-          billing_period_start: string
-          created_at: string
-          id: string
-          last_reset_date: string | null
-          minutes_carried_over: number
-          minutes_limit: number
-          minutes_used: number
-          subscription_id: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          billing_period_end?: string | null
-          billing_period_start?: string
-          created_at?: string
-          id?: string
-          last_reset_date?: string | null
-          minutes_carried_over?: number
-          minutes_limit?: number
-          minutes_used?: number
-          subscription_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          billing_period_end?: string | null
-          billing_period_start?: string
-          created_at?: string
-          id?: string
-          last_reset_date?: string | null
-          minutes_carried_over?: number
-          minutes_limit?: number
-          minutes_used?: number
-          subscription_id?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "usage_tracking_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      get_user_phone: { Args: { _user_id: string }; Returns: string }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

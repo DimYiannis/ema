@@ -84,18 +84,12 @@ const handleLogout = async () => {
         </div>
 
         <nav class="hidden md:flex items-center gap-2">
-          <a
-            href="/#features"
-            :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', activeSection === 'features' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']"
-          >Features</a>
-          <a
-            href="/#how-it-works"
-            :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', activeSection === 'how-it-works' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']"
-          >How It Works</a>
           <RouterLink to="/articles" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">Evidence</RouterLink>
+          <RouterLink to="/subscription" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">{{ session ? 'Subscription' : 'Pricing' }}</RouterLink>
+          <a v-if="!session" href="/#how-it-works" :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', activeSection === 'how-it-works' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']">How It Works</a>
           <template v-if="session">
             <RouterLink to="/dashboard" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">Dashboard</RouterLink>
-            <RouterLink to="/subscription" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">Subscription</RouterLink>
+            <RouterLink to="/voice" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">Voice AI</RouterLink>
           </template>
         </nav>
 
@@ -126,12 +120,12 @@ const handleLogout = async () => {
 
       <div v-if="isMenuOpen" class="md:hidden mt-2 py-4 bg-card/95 backdrop-blur-lg border border-border rounded-2xl px-4 shadow-xl animate-fade-in">
         <nav class="flex flex-col gap-4">
-          <a href="/#features" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', activeSection === 'features' ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">Features</a>
-          <a href="/#how-it-works" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', activeSection === 'how-it-works' ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">How It Works</a>
           <RouterLink to="/articles" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">Evidence</RouterLink>
+          <RouterLink to="/subscription" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">{{ session ? 'Subscription' : 'Pricing' }}</RouterLink>
+          <a v-if="!session" href="/#how-it-works" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', activeSection === 'how-it-works' ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">How It Works</a>
           <template v-if="session">
             <RouterLink to="/dashboard" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">Dashboard</RouterLink>
-            <RouterLink to="/subscription" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">Subscription</RouterLink>
+            <RouterLink to="/voice" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">Voice AI</RouterLink>
             <Button @click="handleLogout" variant="outline" class="w-full rounded-full gap-2">
               <LogOut class="h-4 w-4" />
               Logout

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted } from "vue";
 import { useRouter, RouterLink } from "vue-router";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
@@ -8,19 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Button from "@/components/ui/button.vue";
 import Input from "@/components/ui/input.vue";
 import Label from "@/components/ui/label.vue";
-import PaymentSetup from "@/components/PaymentSetup.vue";
 import { toast } from "vue-sonner";
 import { UserPlus } from "lucide-vue-next";
 import { supabase } from "@/integrations/supabase/client";
 
 const router = useRouter();
-const showPaymentStep = ref(false);
 
 const schema = toTypedSchema(
   z.object({
     firstName: z.string().trim().min(1, { message: "First name is required" }).max(50),
     lastName: z.string().trim().min(1, { message: "Last name is required" }).max(50),
-    phone: z.string().trim().regex(/^\+?[1-9]\d{1,14}$/, { message: "Please enter a valid phone number (e.g., +31636345484)" }),
     email: z.string().trim().email({ message: "Please enter a valid email address" }),
     password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   })
@@ -29,7 +26,6 @@ const schema = toTypedSchema(
 const { handleSubmit, defineField, errors, isSubmitting } = useForm({ validationSchema: schema });
 const [firstName, firstNameAttrs] = defineField("firstName");
 const [lastName, lastNameAttrs] = defineField("lastName");
-const [phone, phoneAttrs] = defineField("phone");
 const [email, emailAttrs] = defineField("email");
 const [password, passwordAttrs] = defineField("password");
 
@@ -37,12 +33,12 @@ let authSubscription: { unsubscribe: () => void } | null = null;
 
 onMounted(() => {
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN" && session && !showPaymentStep.value) router.push("/dashboard");
+    if (event === "SIGNED_IN" && session) router.push("/dashboard");
   });
   authSubscription = data.subscription;
 
   supabase.auth.getSession().then(async ({ data: { session } }) => {
-    if (session && !showPaymentStep.value) {
+    if (session) {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (user && !error) {
         router.push("/dashboard");
@@ -64,7 +60,6 @@ const onSubmit = handleSubmit(async (values) => {
       data: {
         first_name: values.firstName,
         last_name: values.lastName,
-        phone: values.phone,
       },
     },
   });
@@ -78,16 +73,8 @@ const onSubmit = handleSubmit(async (values) => {
     return;
   }
 
-  toast.success("Account created!", { description: "Now let's set up your payment method for the trial." });
-  showPaymentStep.value = true;
+  toast.success("Account created!", { description: "Welcome! You're all set." });
 });
-
-const handlePaymentComplete = () => {
-  toast.success("Payment method added!", { description: "Your free trial has started. Enjoy!" });
-  router.push("/dashboard");
-};
-
-const handleSkipPayment = () => router.push("/dashboard");
 </script>
 
 <template>
@@ -97,9 +84,7 @@ const handleSkipPayment = () => router.push("/dashboard");
       <div class="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse" style="animation-duration: 10s; animation-delay: 1s" />
     </div>
 
-    <PaymentSetup v-if="showPaymentStep" :on-complete="handlePaymentComplete" :on-skip="handleSkipPayment" />
-
-    <Card v-else class="w-full max-w-md shadow-lg border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all duration-500 relative z-10">
+    <Card class="w-full max-w-md shadow-lg border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all duration-500 relative z-10">
       <CardHeader class="space-y-2 text-center">
         <div class="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-2">
           <UserPlus class="w-6 h-6 text-primary-foreground" />
@@ -121,12 +106,6 @@ const handleSkipPayment = () => router.push("/dashboard");
               <Input id="lastName" type="text" placeholder="Doe" v-model="lastName" v-bind="lastNameAttrs" :disabled="isSubmitting" />
               <p v-if="errors.lastName" class="text-sm text-destructive">{{ errors.lastName }}</p>
             </div>
-          </div>
-
-          <div class="space-y-2">
-            <Label for="phone">Phone Number</Label>
-            <Input id="phone" type="tel" placeholder="+31636345484" v-model="phone" v-bind="phoneAttrs" :disabled="isSubmitting" />
-            <p v-if="errors.phone" class="text-sm text-destructive">{{ errors.phone }}</p>
           </div>
 
           <div class="space-y-2">

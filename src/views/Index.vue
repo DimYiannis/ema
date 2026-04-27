@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import Button from "@/components/ui/button.vue";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "vue-sonner";
-import heroImage from "@/assets/hero-phone-call.png";
 import type { Session } from "@supabase/supabase-js";
 
 const router = useRouter();
@@ -60,7 +59,7 @@ const steps = [
     <main class="relative w-full overflow-x-hidden bg-background">
       <!-- Hero Section -->
       <section class="h-screen relative flex items-center justify-center">
-        <div class="absolute inset-0 bg-gradient-to-br from-background via-accent/10 to-background" />
+        <div class="absolute inset-0 bg-background" />
         <AIGridBackground />
         <HeroScene />
 
@@ -141,7 +140,7 @@ const steps = [
             >
               <div class="relative w-full aspect-square max-w-lg">
                 <div class="absolute inset-0 bg-primary/20 rounded-full blur-3xl" />
-                <img :src="heroImage" alt="Older adults using AI voice companion" class="relative rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 border border-border/50 object-cover w-full h-full" />
+                <img src="/hero-phone-call.png" alt="Older adults using AI voice companion" class="relative rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 border border-border/50 object-cover w-full h-full" />
               </div>
             </div>
           </div>
@@ -282,17 +281,28 @@ const steps = [
           <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(74,163,118,0.15),transparent_70%)]" />
           <FloatingParticles />
 
-          <div class="max-w-4xl mx-auto text-center relative z-10">
+          <div class="max-w-6xl mx-auto relative z-10 grid md:grid-cols-2 gap-12 items-center">
+            <div
+              v-motion
+              :initial="{ opacity: 0, x: -50 }"
+              :visible-once="{ opacity: 1, x: 0, transition: { duration: 800, delay: 200 } }"
+              class="flex items-center justify-center"
+            >
+              <div class="relative w-full max-w-md">
+                <div class="absolute inset-0 bg-primary/20 rounded-full blur-3xl" />
+                <img src="/hero-ai-companion.jpg" alt="Person using AI voice companion" class="relative rounded-3xl shadow-2xl border border-border/50 object-cover w-full" />
+              </div>
+            </div>
             <div
               v-motion
               :initial="{ opacity: 0, scale: 0.9 }"
               :visible-once="{ opacity: 1, scale: 1, transition: { duration: 600, delay: 200 } }"
-              class="space-y-8"
+              class="space-y-8 text-center md:text-left"
             >
               <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                 Why Not Give Our Free Trial a Try?
               </h2>
-              <p class="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              <p class="text-xl md:text-2xl text-muted-foreground leading-relaxed">
                 Witness the impact firsthand. Experience how simple voice commands can transform your daily travel and independence.
               </p>
               <div
