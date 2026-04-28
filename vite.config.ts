@@ -10,7 +10,7 @@ export default defineConfig({
       "/api/nvidia": {
         target: "https://integrate.api.nvidia.com",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/nvidia/, ""),
+        rewrite: () => "/v1/chat/completions",
       },
     },
   },

@@ -61,14 +61,12 @@ const speak = (text: string) => {
 };
 
 const sendToNvidia = async (text: string) => {
-  const key = import.meta.env.VITE_NVIDIA_API_KEY;
-  if (!key) { speak("NVIDIA API key not configured. Please add VITE underscore NVIDIA underscore API underscore KEY to your env file."); return; }
   isProcessing.value = true;
   audioLevel.value = 0.15;
   try {
-    const res = await fetch("/api/nvidia/v1/chat/completions", {
+    const res = await fetch("/api/nvidia", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "meta/llama-3.3-70b-instruct",
         messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: text }],
