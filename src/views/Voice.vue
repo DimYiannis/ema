@@ -37,21 +37,33 @@ const SYSTEM_PROMPT = `You are ema, a warm and friendly voice AI assistant helpi
 
 const FEMALE_VOICE_NAMES = ["Samantha", "Victoria", "Karen", "Moira", "Fiona", "Ava", "Allison", "Susan", "Nicky", "Google US English", "Microsoft Zira", "Microsoft Susan", "Google UK English Female"];
 
-const getFemaleVoice = (): SpeechSynthesisVoice | null => {
-  const voices = window.speechSynthesis.getVoices();
-  for (const name of FEMALE_VOICE_NAMES) {
-    const match = voices.find((v) => v.name.includes(name));
-    if (match) return match;
-  }
-  return voices.find((v) => v.lang.startsWith("en")) ?? null;
+const getFemaleVoice = (): Promise<SpeechSynthesisVoice | null> => {
+  return new Promise((resolve) => {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      for (const name of FEMALE_VOICE_NAMES) {
+        const match = voices.find((v) => v.name.includes(name));
+        if (match) return resolve(match);
+      }
+      return resolve(voices.find((v) => v.lang.startsWith("en")) ?? null);
+    }
+    window.speechSynthesis.onvoiceschanged = () => {
+      const loaded = window.speechSynthesis.getVoices();
+      for (const name of FEMALE_VOICE_NAMES) {
+        const match = loaded.find((v) => v.name.includes(name));
+        if (match) return resolve(match);
+      }
+      resolve(loaded.find((v) => v.lang.startsWith("en")) ?? null);
+    };
+  });
 };
 
-const speak = (text: string) => {
+const speak = async (text: string) => {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = 0.88;
   utterance.pitch = 1.1;
-  const voice = getFemaleVoice();
+  const voice = await getFemaleVoice();
   if (voice) utterance.voice = voice;
   isSpeaking.value = true;
   audioLevel.value = 0.5;
