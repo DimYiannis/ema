@@ -3,7 +3,6 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import * as THREE from "three";
 import { pipeline, env } from "@xenova/transformers";
-import { KokoroTTS } from "kokoro-js";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header.vue";
 import { Loader2 } from "lucide-vue-next";
@@ -12,8 +11,6 @@ import type { Session } from "@supabase/supabase-js";
 env.allowLocalModels = false;
 let whisper: any = null;
 let whisperLoading = false;
-let kokoro: KokoroTTS | null = null;
-let kokoroLoading = false;
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const router = useRouter();
@@ -38,68 +35,37 @@ let pulseTimer: ReturnType<typeof setInterval> | null = null;
 
 const SYSTEM_PROMPT = `You are ema, a warm and friendly voice AI assistant helping elderly people navigate independently. Keep responses brief (2-3 sentences max), clear, and conversational — no lists or markdown, just natural speech.`;
 
-let currentAudio: HTMLAudioElement | null = null;
-let orbAnimFrame: number | null = null;
 let greetingPending = false;
 
-const getKokoro = async () => {
-  if (kokoro) return kokoro;
-  if (kokoroLoading) return null;
-  kokoroLoading = true;
-  kokoro = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype: "q8" });
-  kokoroLoading = false;
-  return kokoro;
-};
+const FEMALE_VOICE_NAMES = ["Samantha", "Victoria", "Karen", "Moira", "Fiona", "Ava", "Allison", "Google US English", "Microsoft Zira", "Google UK English Female"];
+
+const getFemaleVoice = (): Promise<SpeechSynthesisVoice | null> =>
+  new Promise((resolve) => {
+    const try_ = () => {
+      const voices = window.speechSynthesis.getVoices();
+      for (const name of FEMALE_VOICE_NAMES) {
+        const match = voices.find((v) => v.name.includes(name));
+        if (match) return resolve(match);
+      }
+      return resolve(voices.find((v) => v.lang.startsWith("en")) ?? null);
+    };
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) return try_();
+    window.speechSynthesis.onvoiceschanged = () => try_();
+  });
 
 const speak = async (text: string) => {
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  if (orbAnimFrame) { cancelAnimationFrame(orbAnimFrame); orbAnimFrame = null; }
-
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.88;
+  utterance.pitch = 1.1;
+  const voice = await getFemaleVoice();
+  if (voice) utterance.voice = voice;
   isSpeaking.value = true;
-  audioLevel.value = 0.3;
-
-  try {
-    const tts = await getKokoro();
-    if (!tts) { isSpeaking.value = false; audioLevel.value = 0; return; }
-
-    const audio = await tts.generate(text, { voice: "af_sarah" });
-    const blob = audio.toBlob();
-    const url = URL.createObjectURL(blob);
-    const audioEl = new Audio(url);
-    currentAudio = audioEl;
-
-    const audioCtx = new AudioContext();
-    await audioCtx.resume();
-    const source = audioCtx.createMediaElementSource(audioEl);
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
-    analyser.connect(audioCtx.destination);
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-    const animateOrb = () => {
-      analyser.getByteFrequencyData(dataArray);
-      const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-      audioLevel.value = Math.min(avg / 80, 1);
-      orbAnimFrame = requestAnimationFrame(animateOrb);
-    };
-
-    audioEl.onplay = () => animateOrb();
-    audioEl.onended = () => {
-      isSpeaking.value = false;
-      audioLevel.value = 0;
-      if (orbAnimFrame) { cancelAnimationFrame(orbAnimFrame); orbAnimFrame = null; }
-      URL.revokeObjectURL(url);
-      audioCtx.close();
-      currentAudio = null;
-    };
-
-    await audioEl.play();
-  } catch (e) {
-    console.error("speak() failed:", e);
-    isSpeaking.value = false;
-    audioLevel.value = 0;
-  }
+  audioLevel.value = 0.5;
+  utterance.onboundary = () => { audioLevel.value = 0.3 + Math.random() * 0.7; };
+  utterance.onend = () => { isSpeaking.value = false; audioLevel.value = 0; };
+  window.speechSynthesis.speak(utterance);
 };
 
 const sendToNvidia = async (text: string) => {
@@ -131,12 +97,16 @@ const getWhisper = async () => {
   if (whisper) return whisper;
   if (whisperLoading) return null;
   whisperLoading = true;
-  modelReady.value = false;
   whisper = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny.en");
   whisperLoading = false;
+  return whisper;
+};
+
+const loadModels = async () => {
+  modelReady.value = false;
+  await getWhisper();
   modelReady.value = true;
   greetingPending = true;
-  return whisper;
 };
 
 const transcribeAudio = async (blob: Blob) => {
@@ -191,7 +161,7 @@ const startRecording = async () => {
 };
 
 const toggleListen = () => {
-  if (isSpeaking.value) { if (currentAudio) { currentAudio.pause(); currentAudio = null; } isSpeaking.value = false; audioLevel.value = 0; return; }
+  if (isSpeaking.value) { window.speechSynthesis.cancel(); isSpeaking.value = false; audioLevel.value = 0; return; }
   if (isListening.value) { stopRecording(); return; }
   if (greetingPending) { greetingPending = false; speak("Hello! I'm ema. How can I help you today?"); return; }
   startRecording();
@@ -397,7 +367,7 @@ onMounted(() => {
     session.value = s;
     loading.value = false;
     if (!s) router.push("/login");
-    else getWhisper(); // pre-warm model in background
+    else loadModels(); // pre-warm both models in parallel
   });
   const { data } = supabase.auth.onAuthStateChange((_e, s) => {
     session.value = s;
@@ -417,8 +387,7 @@ onUnmounted(() => {
   authSub?.unsubscribe();
   stopScene?.();
   if (pulseTimer) clearInterval(pulseTimer);
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  if (orbAnimFrame) { cancelAnimationFrame(orbAnimFrame); orbAnimFrame = null; }
+  window.speechSynthesis.cancel();
   if (mediaRecorder?.state === "recording") mediaRecorder.stop();
 });
 </script>
