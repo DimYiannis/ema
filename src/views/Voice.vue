@@ -49,7 +49,7 @@ const speak = async (text: string) => {
     const res = await fetch("/api/fish-tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, format: "mp3", latency: "normal" }),
+      body: JSON.stringify({ text, reference_id: "933563129e564b19a115bedd57b7406a", format: "mp3", latency: "normal" }),
     });
 
     if (!res.ok) throw new Error("TTS failed");
