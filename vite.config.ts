@@ -19,16 +19,6 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        "/api/fish-tts": {
-          target: "https://api.fish.audio",
-          changeOrigin: true,
-          rewrite: () => "/v1/tts",
-          configure: (proxy) => {
-            proxy.on("proxyReq", (proxyReq) => {
-              proxyReq.setHeader("Authorization", `Bearer ${env.VITE_FISH_AUDIO_KEY}`);
-            });
-          },
-        },
       },
     },
     plugins: [vue()],

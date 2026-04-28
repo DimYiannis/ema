@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import * as THREE from "three";
 import { pipeline, env } from "@xenova/transformers";
+import { KokoroTTS } from "kokoro-js";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header.vue";
 import { Loader2 } from "lucide-vue-next";
@@ -11,6 +12,8 @@ import type { Session } from "@supabase/supabase-js";
 env.allowLocalModels = false;
 let whisper: any = null;
 let whisperLoading = false;
+let kokoro: KokoroTTS | null = null;
+let kokoroLoading = false;
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const router = useRouter();
@@ -37,6 +40,16 @@ const SYSTEM_PROMPT = `You are ema, a warm and friendly voice AI assistant helpi
 
 let currentAudio: HTMLAudioElement | null = null;
 let orbAnimFrame: number | null = null;
+let greetingPending = false;
+
+const getKokoro = async () => {
+  if (kokoro) return kokoro;
+  if (kokoroLoading) return null;
+  kokoroLoading = true;
+  kokoro = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", { dtype: "q8" });
+  kokoroLoading = false;
+  return kokoro;
+};
 
 const speak = async (text: string) => {
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
@@ -46,21 +59,18 @@ const speak = async (text: string) => {
   audioLevel.value = 0.3;
 
   try {
-    const res = await fetch("/api/fish-tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, reference_id: "933563129e564b19a115bedd57b7406a", format: "mp3", latency: "normal" }),
-    });
+    const tts = await getKokoro();
+    if (!tts) { isSpeaking.value = false; audioLevel.value = 0; return; }
 
-    if (!res.ok) throw new Error("TTS failed");
-
-    const blob = await res.blob();
+    const audio = await tts.generate(text, { voice: "af_sarah" });
+    const blob = audio.toBlob();
     const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    currentAudio = audio;
+    const audioEl = new Audio(url);
+    currentAudio = audioEl;
 
     const audioCtx = new AudioContext();
-    const source = audioCtx.createMediaElementSource(audio);
+    await audioCtx.resume();
+    const source = audioCtx.createMediaElementSource(audioEl);
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
     source.connect(analyser);
@@ -74,8 +84,8 @@ const speak = async (text: string) => {
       orbAnimFrame = requestAnimationFrame(animateOrb);
     };
 
-    audio.onplay = () => animateOrb();
-    audio.onended = () => {
+    audioEl.onplay = () => animateOrb();
+    audioEl.onended = () => {
       isSpeaking.value = false;
       audioLevel.value = 0;
       if (orbAnimFrame) { cancelAnimationFrame(orbAnimFrame); orbAnimFrame = null; }
@@ -84,8 +94,9 @@ const speak = async (text: string) => {
       currentAudio = null;
     };
 
-    await audio.play();
-  } catch {
+    await audioEl.play();
+  } catch (e) {
+    console.error("speak() failed:", e);
     isSpeaking.value = false;
     audioLevel.value = 0;
   }
@@ -124,7 +135,7 @@ const getWhisper = async () => {
   whisper = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny.en");
   whisperLoading = false;
   modelReady.value = true;
-  speak("Hello! I'm ema. How can I help you today?");
+  greetingPending = true;
   return whisper;
 };
 
@@ -182,6 +193,7 @@ const startRecording = async () => {
 const toggleListen = () => {
   if (isSpeaking.value) { if (currentAudio) { currentAudio.pause(); currentAudio = null; } isSpeaking.value = false; audioLevel.value = 0; return; }
   if (isListening.value) { stopRecording(); return; }
+  if (greetingPending) { greetingPending = false; speak("Hello! I'm ema. How can I help you today?"); return; }
   startRecording();
 };
 
