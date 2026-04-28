@@ -402,11 +402,33 @@ onUnmounted(() => {
 
     <canvas ref="canvasRef" class="absolute inset-0 w-full h-full pointer-events-none" />
 
-    <div class="relative z-10 flex-1 flex flex-col items-center justify-end pb-20 gap-3">
-      <div v-if="transcript || aiResponse" class="max-w-xs text-center space-y-2 mb-2 px-6">
-        <p v-if="transcript" class="text-white/50 text-sm">You: {{ transcript }}</p>
-        <p v-if="aiResponse && !isListening" class="text-white/90 text-sm leading-relaxed">ema: {{ aiResponse }}</p>
+    <!-- User question note — left side -->
+    <transition name="note-left">
+      <div
+        v-if="transcript"
+        class="absolute left-6 top-1/2 -translate-y-1/2 z-20 w-52 max-w-[calc(50vw-1.5rem)]"
+      >
+        <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-4 shadow-lg">
+          <p class="text-[10px] font-semibold uppercase tracking-widest text-white/30 mb-2">you</p>
+          <p class="text-[13px] leading-relaxed text-white/65">{{ transcript }}</p>
+        </div>
       </div>
+    </transition>
+
+    <!-- Ema response note — right side -->
+    <transition name="note-right">
+      <div
+        v-if="aiResponse && !isListening"
+        class="absolute right-6 top-1/2 -translate-y-1/2 z-20 w-52 max-w-[calc(50vw-1.5rem)]"
+      >
+        <div class="bg-[#55ffcc]/5 backdrop-blur-md border border-[#55ffcc]/15 rounded-2xl px-4 py-4 shadow-lg">
+          <p class="text-[10px] font-semibold uppercase tracking-widest text-[#55ffcc]/50 mb-2">ema</p>
+          <p class="text-[13px] leading-relaxed text-white/90">{{ aiResponse }}</p>
+        </div>
+      </div>
+    </transition>
+
+    <div class="relative z-10 flex-1 flex flex-col items-center justify-end pb-20 gap-3">
       <p v-if="errorMsg" class="text-red-400 text-xs text-center px-6 mb-1">{{ errorMsg }}</p>
       <p class="text-white/35 text-xs tracking-wide">
         <span v-if="!modelReady && !isListening && !isProcessing && !isSpeaking">Loading voice model...</span>
@@ -433,3 +455,15 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.note-right-enter-active { transition: opacity 0.4s ease, transform 0.4s ease; }
+.note-right-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.note-right-enter-from   { opacity: 0; transform: translateY(-48%) translateX(14px); }
+.note-right-leave-to     { opacity: 0; transform: translateY(-48%) translateX(14px); }
+
+.note-left-enter-active  { transition: opacity 0.4s ease, transform 0.4s ease; }
+.note-left-leave-active  { transition: opacity 0.25s ease, transform 0.25s ease; }
+.note-left-enter-from    { opacity: 0; transform: translateY(-48%) translateX(-14px); }
+.note-left-leave-to      { opacity: 0; transform: translateY(-48%) translateX(-14px); }
+</style>
