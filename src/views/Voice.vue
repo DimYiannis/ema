@@ -35,41 +35,60 @@ let pulseTimer: ReturnType<typeof setInterval> | null = null;
 
 const SYSTEM_PROMPT = `You are ema, a warm and friendly voice AI assistant helping elderly people navigate independently. Keep responses brief (2-3 sentences max), clear, and conversational — no lists or markdown, just natural speech.`;
 
-const FEMALE_VOICE_NAMES = ["Samantha", "Victoria", "Karen", "Moira", "Fiona", "Ava", "Allison", "Susan", "Nicky", "Google US English", "Microsoft Zira", "Microsoft Susan", "Google UK English Female"];
-
-const getFemaleVoice = (): Promise<SpeechSynthesisVoice | null> => {
-  return new Promise((resolve) => {
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      for (const name of FEMALE_VOICE_NAMES) {
-        const match = voices.find((v) => v.name.includes(name));
-        if (match) return resolve(match);
-      }
-      return resolve(voices.find((v) => v.lang.startsWith("en")) ?? null);
-    }
-    window.speechSynthesis.onvoiceschanged = () => {
-      const loaded = window.speechSynthesis.getVoices();
-      for (const name of FEMALE_VOICE_NAMES) {
-        const match = loaded.find((v) => v.name.includes(name));
-        if (match) return resolve(match);
-      }
-      resolve(loaded.find((v) => v.lang.startsWith("en")) ?? null);
-    };
-  });
-};
+let currentAudio: HTMLAudioElement | null = null;
+let orbAnimFrame: number | null = null;
 
 const speak = async (text: string) => {
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.88;
-  utterance.pitch = 1.1;
-  const voice = await getFemaleVoice();
-  if (voice) utterance.voice = voice;
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  if (orbAnimFrame) { cancelAnimationFrame(orbAnimFrame); orbAnimFrame = null; }
+
   isSpeaking.value = true;
-  audioLevel.value = 0.5;
-  utterance.onboundary = () => { audioLevel.value = 0.3 + Math.random() * 0.7; };
-  utterance.onend = () => { isSpeaking.value = false; audioLevel.value = 0; };
-  window.speechSynthesis.speak(utterance);
+  audioLevel.value = 0.3;
+
+  try {
+    const res = await fetch("/api/fish-tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, format: "mp3", latency: "normal" }),
+    });
+
+    if (!res.ok) throw new Error("TTS failed");
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    currentAudio = audio;
+
+    const audioCtx = new AudioContext();
+    const source = audioCtx.createMediaElementSource(audio);
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    const animateOrb = () => {
+      analyser.getByteFrequencyData(dataArray);
+      const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+      audioLevel.value = Math.min(avg / 80, 1);
+      orbAnimFrame = requestAnimationFrame(animateOrb);
+    };
+
+    audio.onplay = () => animateOrb();
+    audio.onended = () => {
+      isSpeaking.value = false;
+      audioLevel.value = 0;
+      if (orbAnimFrame) { cancelAnimationFrame(orbAnimFrame); orbAnimFrame = null; }
+      URL.revokeObjectURL(url);
+      audioCtx.close();
+      currentAudio = null;
+    };
+
+    await audio.play();
+  } catch {
+    isSpeaking.value = false;
+    audioLevel.value = 0;
+  }
 };
 
 const sendToNvidia = async (text: string) => {
@@ -161,7 +180,7 @@ const startRecording = async () => {
 };
 
 const toggleListen = () => {
-  if (isSpeaking.value) { window.speechSynthesis.cancel(); isSpeaking.value = false; audioLevel.value = 0; return; }
+  if (isSpeaking.value) { if (currentAudio) { currentAudio.pause(); currentAudio = null; } isSpeaking.value = false; audioLevel.value = 0; return; }
   if (isListening.value) { stopRecording(); return; }
   startRecording();
 };
@@ -386,7 +405,8 @@ onUnmounted(() => {
   authSub?.unsubscribe();
   stopScene?.();
   if (pulseTimer) clearInterval(pulseTimer);
-  window.speechSynthesis.cancel();
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  if (orbAnimFrame) { cancelAnimationFrame(orbAnimFrame); orbAnimFrame = null; }
   if (mediaRecorder?.state === "recording") mediaRecorder.stop();
 });
 </script>

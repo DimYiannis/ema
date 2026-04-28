@@ -13,8 +13,20 @@ export default defineConfig(({ mode }) => {
           target: "https://integrate.api.nvidia.com",
           changeOrigin: true,
           rewrite: () => "/v1/chat/completions",
-          headers: {
-            Authorization: `Bearer ${env.VITE_NVIDIA_API_KEY}`,
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              proxyReq.setHeader("Authorization", `Bearer ${env.VITE_NVIDIA_API_KEY}`);
+            });
+          },
+        },
+        "/api/fish-tts": {
+          target: "https://api.fish.audio",
+          changeOrigin: true,
+          rewrite: () => "/v1/tts",
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              proxyReq.setHeader("Authorization", `Bearer ${env.VITE_FISH_AUDIO_KEY}`);
+            });
           },
         },
       },
