@@ -27,6 +27,8 @@ const aiResponse = ref("");
 const audioLevel = ref(0);
 const errorMsg = ref("");
 
+const conversationHistory = ref<{ role: "user" | "assistant"; content: string }[]>([]);
+
 let authSub: { unsubscribe: () => void } | null = null;
 let stopScene: (() => void) | null = null;
 let mediaRecorder: MediaRecorder | null = null;
@@ -71,19 +73,24 @@ const speak = async (text: string) => {
 const sendToNvidia = async (text: string) => {
   isProcessing.value = true;
   audioLevel.value = 0.15;
+  conversationHistory.value.push({ role: "user", content: text });
   try {
     const res = await fetch("/api/nvidia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "meta/llama-3.3-70b-instruct",
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: text }],
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...conversationHistory.value,
+        ],
         max_tokens: 150,
         temperature: 0.7,
       }),
     });
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content ?? "I didn't catch that. Could you try again?";
+    conversationHistory.value.push({ role: "assistant", content: reply });
     aiResponse.value = reply;
     speak(reply);
   } catch {
