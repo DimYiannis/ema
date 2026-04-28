@@ -2,18 +2,159 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import * as THREE from "three";
+import { pipeline, env } from "@xenova/transformers";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header.vue";
 import { Loader2 } from "lucide-vue-next";
 import type { Session } from "@supabase/supabase-js";
+
+env.allowLocalModels = false;
+let whisper: any = null;
+let whisperLoading = false;
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const router = useRouter();
 const session = ref<Session | null>(null);
 const loading = ref(true);
 
+// Voice state
+const isListening = ref(false);
+const isSpeaking = ref(false);
+const isProcessing = ref(false);
+const modelReady = ref(false);
+const transcript = ref("");
+const aiResponse = ref("");
+const audioLevel = ref(0);
+const errorMsg = ref("");
+
 let authSub: { unsubscribe: () => void } | null = null;
 let stopScene: (() => void) | null = null;
+let mediaRecorder: MediaRecorder | null = null;
+let audioChunks: Blob[] = [];
+let pulseTimer: ReturnType<typeof setInterval> | null = null;
+
+const SYSTEM_PROMPT = `You are ema, a warm and friendly voice AI assistant helping elderly people navigate independently. Keep responses brief (2-3 sentences max), clear, and conversational — no lists or markdown, just natural speech.`;
+
+const FEMALE_VOICE_NAMES = ["Samantha", "Victoria", "Karen", "Moira", "Fiona", "Ava", "Allison", "Susan", "Nicky", "Google US English", "Microsoft Zira", "Microsoft Susan", "Google UK English Female"];
+
+const getFemaleVoice = (): SpeechSynthesisVoice | null => {
+  const voices = window.speechSynthesis.getVoices();
+  for (const name of FEMALE_VOICE_NAMES) {
+    const match = voices.find((v) => v.name.includes(name));
+    if (match) return match;
+  }
+  return voices.find((v) => v.lang.startsWith("en")) ?? null;
+};
+
+const speak = (text: string) => {
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.88;
+  utterance.pitch = 1.1;
+  const voice = getFemaleVoice();
+  if (voice) utterance.voice = voice;
+  isSpeaking.value = true;
+  audioLevel.value = 0.5;
+  utterance.onboundary = () => { audioLevel.value = 0.3 + Math.random() * 0.7; };
+  utterance.onend = () => { isSpeaking.value = false; audioLevel.value = 0; };
+  window.speechSynthesis.speak(utterance);
+};
+
+const sendToNvidia = async (text: string) => {
+  const key = import.meta.env.VITE_NVIDIA_API_KEY;
+  if (!key) { speak("NVIDIA API key not configured. Please add VITE underscore NVIDIA underscore API underscore KEY to your env file."); return; }
+  isProcessing.value = true;
+  audioLevel.value = 0.15;
+  try {
+    const res = await fetch("/api/nvidia/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "meta/llama-3.3-70b-instruct",
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: text }],
+        max_tokens: 150,
+        temperature: 0.7,
+      }),
+    });
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content ?? "I didn't catch that. Could you try again?";
+    aiResponse.value = reply;
+    speak(reply);
+  } catch {
+    speak("Sorry, I had trouble connecting. Please try again.");
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+const getWhisper = async () => {
+  if (whisper) return whisper;
+  if (whisperLoading) return null;
+  whisperLoading = true;
+  modelReady.value = false;
+  whisper = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny.en");
+  whisperLoading = false;
+  modelReady.value = true;
+  speak("Hello! I'm ema. How can I help you today?");
+  return whisper;
+};
+
+const transcribeAudio = async (blob: Blob) => {
+  try {
+    const asr = await getWhisper();
+    if (!asr) { errorMsg.value = "Model still loading, try again."; isProcessing.value = false; return; }
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioCtx = new AudioContext({ sampleRate: 16000 });
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    audioCtx.close();
+    const float32 = audioBuffer.getChannelData(0);
+    const result = await asr(float32, { sampling_rate: 16000, chunk_length_s: 30, stride_length_s: 5 });
+    const text = (result as any).text?.trim();
+    if (!text) { isProcessing.value = false; errorMsg.value = "No speech detected. Try again."; return; }
+    transcript.value = text;
+    await sendToNvidia(text);
+  } catch {
+    isProcessing.value = false;
+    errorMsg.value = "Transcription failed. Try again.";
+  }
+};
+
+const stopRecording = () => {
+  if (!mediaRecorder) return;
+  mediaRecorder.stop();
+  isListening.value = false;
+  if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+  audioLevel.value = 0;
+};
+
+const startRecording = async () => {
+  errorMsg.value = "";
+  transcript.value = "";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/ogg";
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks = [];
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      isProcessing.value = true;
+      const blob = new Blob(audioChunks, { type: mimeType });
+      await transcribeAudio(blob);
+    };
+    mediaRecorder.start();
+    isListening.value = true;
+    pulseTimer = setInterval(() => { audioLevel.value = 0.2 + Math.random() * 0.8; }, 120);
+  } catch {
+    errorMsg.value = "Microphone access denied.";
+  }
+};
+
+const toggleListen = () => {
+  if (isSpeaking.value) { window.speechSynthesis.cancel(); isSpeaking.value = false; audioLevel.value = 0; return; }
+  if (isListening.value) { stopRecording(); return; }
+  startRecording();
+};
 
 const noiseGLSL = `
   vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x,289.0);}
@@ -128,10 +269,10 @@ const bgFragmentShader = `
   }
 `;
 
-function initScene(canvas: HTMLCanvasElement) {
+function initScene(canvas: HTMLCanvasElement, levelFn: () => number) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-  camera.position.z = 5;
+  camera.position.z = 8;
 
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -195,6 +336,8 @@ function initScene(canvas: HTMLCanvasElement) {
   const animate = () => {
     animId = requestAnimationFrame(animate);
     uniforms.uTime.value = clock.getElapsedTime();
+    uniforms.uAudioLevel.value = levelFn();
+    uniforms.uIntensity.value = 0.4 + levelFn() * 0.35;
     blob.rotation.y += 0.0005;
     blob.rotation.x += 0.00025;
     renderer.render(scene, camera);
@@ -213,6 +356,7 @@ onMounted(() => {
     session.value = s;
     loading.value = false;
     if (!s) router.push("/login");
+    else getWhisper(); // pre-warm model in background
   });
   const { data } = supabase.auth.onAuthStateChange((_e, s) => {
     session.value = s;
@@ -224,13 +368,16 @@ onMounted(() => {
 watch([session, loading], async ([s, l]) => {
   if (s && !l) {
     await nextTick();
-    if (canvasRef.value) initScene(canvasRef.value);
+    if (canvasRef.value) initScene(canvasRef.value, () => audioLevel.value);
   }
 }, { immediate: true });
 
 onUnmounted(() => {
   authSub?.unsubscribe();
   stopScene?.();
+  if (pulseTimer) clearInterval(pulseTimer);
+  window.speechSynthesis.cancel();
+  if (mediaRecorder?.state === "recording") mediaRecorder.stop();
 });
 </script>
 
@@ -239,16 +386,39 @@ onUnmounted(() => {
     <Loader2 class="h-8 w-8 animate-spin text-primary" />
   </div>
 
-  <div v-else-if="session" class="min-h-screen bg-[#0a0f0b] flex flex-col relative overflow-hidden">
+  <div v-else-if="session" class="min-h-screen bg-[#030503] flex flex-col relative overflow-hidden">
     <Header />
 
     <canvas ref="canvasRef" class="absolute inset-0 w-full h-full pointer-events-none" />
 
     <div class="relative z-10 flex-1 flex flex-col items-center justify-end pb-20 gap-3">
-      <button class="px-10 py-3.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-white font-medium text-sm hover:bg-white/20 transition-all duration-300">
-        Start Conversation
+      <div v-if="transcript || aiResponse" class="max-w-xs text-center space-y-2 mb-2 px-6">
+        <p v-if="transcript" class="text-white/50 text-sm">You: {{ transcript }}</p>
+        <p v-if="aiResponse && !isListening" class="text-white/90 text-sm leading-relaxed">ema: {{ aiResponse }}</p>
+      </div>
+      <p v-if="errorMsg" class="text-red-400 text-xs text-center px-6 mb-1">{{ errorMsg }}</p>
+      <p class="text-white/35 text-xs tracking-wide">
+        <span v-if="!modelReady && !isListening && !isProcessing && !isSpeaking">Loading voice model...</span>
+        <span v-else-if="isListening">Listening...</span>
+        <span v-else-if="isProcessing">Thinking...</span>
+        <span v-else-if="isSpeaking">Speaking — tap to interrupt</span>
+        <span v-else>Press to speak</span>
+      </p>
+      <button
+        @click="toggleListen"
+        :disabled="isProcessing || !modelReady"
+        :class="[
+          'px-10 py-3.5 rounded-full backdrop-blur-sm border font-medium text-sm transition-all duration-300 disabled:opacity-50',
+          isListening ? 'bg-red-500/30 border-red-400/50 text-white hover:bg-red-500/40' :
+          isSpeaking  ? 'bg-primary/30 border-primary/50 text-white hover:bg-primary/40' :
+                        'bg-white/10 border-white/15 text-white hover:bg-white/20'
+        ]"
+      >
+        <Loader2 v-if="isProcessing || !modelReady" class="w-4 h-4 animate-spin inline" />
+        <span v-else-if="isListening">Stop</span>
+        <span v-else-if="isSpeaking">Interrupt</span>
+        <span v-else>Start Conversation</span>
       </button>
-      <p class="text-white/35 text-xs tracking-wide">Press to start conversation</p>
     </div>
   </div>
 </template>

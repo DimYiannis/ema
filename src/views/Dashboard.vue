@@ -4,7 +4,7 @@ import { useRouter, RouterLink } from "vue-router";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import Header from "@/components/Header.vue";
-import { Loader2, Phone, Mic, Map, Calendar, Sparkles } from "lucide-vue-next";
+import { Loader2, Mic, Map, Calendar, Sparkles } from "lucide-vue-next";
 
 const router = useRouter();
 const session = ref<Session | null>(null);
@@ -55,24 +55,24 @@ onUnmounted(() => authSubscription?.unsubscribe());
         <p class="text-muted-foreground mt-1">Ready to start your journey?</p>
       </div>
 
-      <!-- Call banner -->
+      <!-- Voice banner -->
       <div class="flex items-center justify-between bg-card border border-border rounded-xl px-6 py-4 shadow-sm">
         <div class="flex items-center gap-4">
           <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-            <Phone class="w-5 h-5 text-primary" />
+            <Mic class="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p class="font-semibold text-foreground">Call Our AI Assistant</p>
-            <p class="text-sm text-muted-foreground">Speak directly with our voice agent anytime</p>
+            <p class="font-semibold text-foreground">Talk to Your AI Assistant</p>
+            <p class="text-sm text-muted-foreground">Speak directly with ema — right in your browser</p>
           </div>
         </div>
-        <a
-          href="tel:+3197010222286"
+        <RouterLink
+          to="/voice"
           class="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full font-medium text-sm hover:opacity-90 transition-opacity shadow"
         >
-          <Phone class="w-4 h-4" />
-          +31 97010222286
-        </a>
+          <Mic class="w-4 h-4" />
+          Start Talking
+        </RouterLink>
       </div>
 
       <!-- Feature cards -->

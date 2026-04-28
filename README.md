@@ -1,87 +1,56 @@
-# Voice AI Assistant
+# ema.
 
-<img width="2802" height="1418" alt="image" src="https://github.com/user-attachments/assets/57678110-3bc1-471e-bb2a-fd5f38deaa03" />
+**No interface. Just speak.**
 
-A modern voice-powered AI assistant application built with React, featuring real-time conversational AI capabilities powered by ElevenLabs.
+ema is a voice-first AI assistant for the third age — removing the interface barrier that locks elderly people out of AI. No apps to learn, no menus to navigate. One button, your voice, full AI access.
 
-<img width="2888" height="1418" alt="image" src="https://github.com/user-attachments/assets/c67e55b1-29bb-4c3d-af1c-b8e886659de1" />
+## Concept
+
+The problem isn't age. It's interfaces. Apps are built by digital natives for digital natives. ema's thesis: eliminate the interface entirely. Voice is the only UI that 60 years of life already trained you to use.
 
 ## Features
 
-- **Voice Chat Agent** - Real-time voice conversations with an AI assistant using ElevenLabs Conversational AI
-
-- 
-  <img width="2682" height="1392" alt="image" src="https://github.com/user-attachments/assets/1ed12489-4adb-4c77-a501-716f8044c0b4" />
-
-- **Phone Call Support** - Call the AI assistant directly via phone (+31 97010222286)
-  
-  <img width="2834" height="1412" alt="image" src="https://github.com/user-attachments/assets/a32a954f-ecb6-474c-87eb-f3e2399eab95" />
-
-- **User Authentication** - Secure email/password authentication
-- **Subscription Management** - Tiered subscription plans with minute-based usage tracking
-  - Basic Plan: 300 minutes/month at €9.99
-  - Premium Plan: 1000 minutes/month with monthly/6-month/annual options
-    
-    <img width="2690" height="1402" alt="image" src="https://github.com/user-attachments/assets/22577fde-7840-41f6-9608-200f5aeeb290" />
-
-- **7-Day Free Trial** - All new users get a free trial period
-- **Payment Processing** - Integrated with Mollie Payments for secure transactions
+- **In-browser voice AI** — push to talk, Whisper STT runs locally in browser, no phone number needed
+- **NVIDIA LLM** — powered by `meta/llama-3.3-70b-instruct` via NVIDIA NIM
+- **Evidence page** — peer-reviewed research on interface exclusion and voice AI adoption
+- **Demo login** — try the app without signing up
+- **User auth** — email/password via Supabase
+- **Subscription plans** — Basic (300 min/mo) and Premium (1000 min/mo)
+- **3D orb visualizer** — WebGL orb animates to voice activity
 
 ## Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Tailwind CSS, shadcn/ui components
-- **3D Graphics**: Three.js, React Three Fiber
-- **Animations**: Framer Motion
-- **Backend**: Lovable Cloud (Supabase)
-- **Voice AI**: ElevenLabs Conversational AI
-- **Payments**: Mollie
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher)
-- npm or bun
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <your-repo-url>
-
-# Navigate to project directory
-cd <project-name>
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-The app will be available at `http://localhost:8080`
+- **Frontend**: Vue 3, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui
+- **3D**: Three.js (custom GLSL shaders)
+- **STT**: Whisper `tiny.en` via `@xenova/transformers` (in-browser, no API)
+- **LLM**: NVIDIA NIM — `meta/llama-3.3-70b-instruct`
+- **TTS**: Browser `speechSynthesis` API
+- **Backend**: Supabase (auth + database)
 
 ## Project Structure
 
 ```
 src/
 ├── components/
-│   ├── 3d/              # Three.js 3D components
-│   ├── ui/              # shadcn/ui components
-│   └── ...              # Feature components
-├── hooks/               # Custom React hooks
-├── pages/               # Page components
-├── integrations/        # External service integrations
-└── utils/               # Utility functions
+│   ├── 3d/          # Three.js orb + scene components
+│   ├── ui/          # shadcn/ui components
+│   └── Header.vue   # Nav with active route highlights
+├── views/
+│   ├── Voice.vue        # Voice AI — STT + LLM + TTS
+│   ├── Index.vue        # Landing page
+│   ├── Dashboard.vue    # User dashboard
+│   ├── ArticlesEvidence.vue  # Research page
+│   ├── Subscription.vue
+│   ├── Login.vue        # Includes demo login
+│   └── Register.vue
+└── integrations/
+    └── supabase/    # Auth + DB client
 
 supabase/
-└── functions/           # Edge functions for backend logic
+└── migrations/      # DB schema
 ```
-## Deployment
-
-Deploy via Lovable by clicking **Share → Publish** in the editor.
 
 ## License
 
-Private project - All rights reserved.
+Private — all rights reserved.

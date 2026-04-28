@@ -45,9 +45,9 @@ const features = [
 ];
 
 const steps = [
-  { number: 1, icon: Phone, title: "Call or open the app on your phone", description: "Tap or answer call—no setup needed. Just pick up and start." },
-  { number: 2, icon: MessageSquare, title: "Ask where you want to go in your own words", description: "Speak naturally and the voice assistant listens and understands." },
-  { number: 3, icon: MapPin, title: "Receive clear, spoken directions step by step", description: "Voice output gives you turn-by-turn instructions as you travel." },
+  { number: 1, icon: Phone, title: "Open the app and tap to speak", description: "No setup needed — open the app, press the button, and start talking naturally." },
+  { number: 2, icon: MessageSquare, title: "Ask anything — in your own words", description: "Navigation, reminders, news, appointments. Speak naturally and ema understands the intent behind the words." },
+  { number: 3, icon: MapPin, title: "Hear a clear, calm answer spoken back to you", description: "No reading required. ema responds in plain speech at a pace that works for you." },
   { number: 4, icon: Bell, title: "Optional: Family or caregiver gets notified", description: "Optional alert to family for added safety and peace of mind." },
 ];
 </script>
@@ -71,7 +71,7 @@ const steps = [
           >
             <h1 class="text-6xl md:text-8xl lg:text-9xl font-sans font-light mb-6">ema.</h1>
             <p class="opacity-60 text-lg md:text-xl tracking-widest font-sans font-normal mb-12">
-              Real-Time Voice Intelligence
+              No interface. Just speak.
             </p>
 
             <div
@@ -122,10 +122,10 @@ const steps = [
               class="space-y-6"
             >
               <h2 class="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-tight drop-shadow-lg">
-                Call and Connect with Your AI Assistant
+                The Interface Was the Problem. We Removed It.
               </h2>
               <p class="text-xl md:text-2xl text-muted-foreground leading-relaxed drop-shadow-md">
-                Plan trips, get directions, and stay connected — all by speaking naturally.
+                No apps to learn. No menus to navigate. ema puts the full power of AI between you and one button — your voice.
               </p>
               <Button size="lg" class="text-lg px-8 py-6 h-auto shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105" @click="router.push('/dashboard')">
                 Try It Today
@@ -159,13 +159,13 @@ const steps = [
               :initial="{ opacity: 0, y: 30 }"
               :visible-once="{ opacity: 1, y: 0, transition: { duration: 600 } }"
               class="text-4xl md:text-5xl font-bold text-center text-foreground mb-16"
-            >Travel Shouldn't Be Hard at Any Age</h2>
+            >Technology Shouldn't Require a Manual</h2>
             <div class="grid md:grid-cols-3 gap-8">
               <div
                 v-for="(problem, i) in [
-                  { icon: Phone, title: 'Digital Barriers', desc: 'Complex apps are confusing and hard to navigate' },
-                  { icon: Footprints, title: 'Physical Barriers', desc: 'Walking, boarding, and navigation is challenging' },
-                  { icon: Calendar, title: 'Social Barriers', desc: 'Missing errands and social events due to travel difficulty' },
+                  { icon: Phone, title: 'Interface Exclusion', desc: 'Apps designed for digital natives — menus, gestures, and flows that assume 20 years of screen experience' },
+                  { icon: Footprints, title: 'The Learning Tax', desc: 'Every new app demands hours of learning before it delivers a minute of value. That cost is invisible to designers, enormous to users' },
+                  { icon: Calendar, title: 'Confidence Erosion', desc: 'Repeated failure with technology leads to withdrawal — not because people can\'t, but because the tools were never built for them' },
                 ]"
                 :key="problem.title"
                 v-motion
@@ -300,10 +300,10 @@ const steps = [
               class="space-y-8 text-center md:text-left"
             >
               <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-                Why Not Give Our Free Trial a Try?
+                AI Access Shouldn't Depend on Your Age.
               </h2>
               <p class="text-xl md:text-2xl text-muted-foreground leading-relaxed">
-                Witness the impact firsthand. Experience how simple voice commands can transform your daily travel and independence.
+                ema gives the third age what everyone else already has — immediate, frictionless access to AI. No manual. No learning curve. No barriers.
               </p>
               <div
                 v-motion

@@ -1,17 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import { RouterLink, useRouter } from "vue-router";
-import { Menu, X, Moon, Sun, LogOut } from "lucide-vue-next";
+import { ref, watch, onMounted, onUnmounted } from "vue";
+import { RouterLink, useRouter, useRoute } from "vue-router";
+import { Menu, X, Moon, Sun, LogOut, UserPlus } from "lucide-vue-next";
 import Button from "@/components/ui/button.vue";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "vue-sonner";
 import type { Session } from "@supabase/supabase-js";
 
 const router = useRouter();
+const route = useRoute();
 const isMenuOpen = ref(false);
 const isDark = ref(false);
 const session = ref<Session | null>(null);
 const activeSection = ref("");
+
+watch(route, () => { isMenuOpen.value = false });
+
+const isActive = (path: string) => route.path === path;
 
 let authSubscription: { unsubscribe: () => void } | null = null;
 let observer: IntersectionObserver | null = null;
@@ -84,12 +89,13 @@ const handleLogout = async () => {
         </div>
 
         <nav class="hidden md:flex items-center gap-2">
-          <RouterLink to="/articles" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">Evidence</RouterLink>
-          <RouterLink to="/subscription" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">{{ session ? 'Subscription' : 'Pricing' }}</RouterLink>
+          <RouterLink to="/articles" :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', isActive('/articles') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']">Evidence</RouterLink>
+          <RouterLink to="/subscription" :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', isActive('/subscription') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']">{{ session ? 'Subscription' : 'Pricing' }}</RouterLink>
+          <a v-if="!session" href="/#features" :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', activeSection === 'features' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']">Features</a>
           <a v-if="!session" href="/#how-it-works" :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', activeSection === 'how-it-works' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']">How It Works</a>
           <template v-if="session">
-            <RouterLink to="/dashboard" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">Dashboard</RouterLink>
-            <RouterLink to="/voice" class="text-sm font-medium hover:bg-muted/60 rounded-full px-4 py-2 transition-all">Voice AI</RouterLink>
+            <RouterLink to="/dashboard" :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', isActive('/dashboard') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']">Dashboard</RouterLink>
+            <RouterLink to="/voice" :class="['text-sm font-medium rounded-full px-4 py-2 transition-all', isActive('/voice') ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60']">Voice AI</RouterLink>
           </template>
         </nav>
 
@@ -109,6 +115,12 @@ const handleLogout = async () => {
             <RouterLink to="/login">
               <Button variant="outline" size="lg" class="hidden md:flex gap-2 text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-full">Login</Button>
             </RouterLink>
+            <RouterLink to="/register">
+              <Button size="lg" class="hidden md:flex gap-2 text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-full">
+                <UserPlus class="h-4 w-4" />
+                Sign Up
+              </Button>
+            </RouterLink>
           </template>
 
           <button class="md:hidden p-1.5 sm:p-2" @click="isMenuOpen = !isMenuOpen" aria-label="Toggle menu">
@@ -120,12 +132,13 @@ const handleLogout = async () => {
 
       <div v-if="isMenuOpen" class="md:hidden mt-2 py-4 bg-card/95 backdrop-blur-lg border border-border rounded-2xl px-4 shadow-xl animate-fade-in">
         <nav class="flex flex-col gap-4">
-          <RouterLink to="/articles" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">Evidence</RouterLink>
-          <RouterLink to="/subscription" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">{{ session ? 'Subscription' : 'Pricing' }}</RouterLink>
+          <RouterLink to="/articles" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', isActive('/articles') ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">Evidence</RouterLink>
+          <RouterLink to="/subscription" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', isActive('/subscription') ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">{{ session ? 'Subscription' : 'Pricing' }}</RouterLink>
+          <a v-if="!session" href="/#features" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', activeSection === 'features' ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">Features</a>
           <a v-if="!session" href="/#how-it-works" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', activeSection === 'how-it-works' ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">How It Works</a>
           <template v-if="session">
-            <RouterLink to="/dashboard" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">Dashboard</RouterLink>
-            <RouterLink to="/voice" class="text-sm font-medium hover:text-accent transition-colors px-3 py-2 rounded-lg">Voice AI</RouterLink>
+            <RouterLink to="/dashboard" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', isActive('/dashboard') ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">Dashboard</RouterLink>
+            <RouterLink to="/voice" :class="['text-sm font-medium transition-colors px-3 py-2 rounded-lg', isActive('/voice') ? 'bg-primary text-primary-foreground' : 'hover:text-accent']">Voice AI</RouterLink>
             <Button @click="handleLogout" variant="outline" class="w-full rounded-full gap-2">
               <LogOut class="h-4 w-4" />
               Logout
@@ -134,6 +147,12 @@ const handleLogout = async () => {
           <template v-else>
             <RouterLink to="/login">
               <Button variant="outline" class="w-full rounded-full">Login</Button>
+            </RouterLink>
+            <RouterLink to="/register">
+              <Button class="w-full rounded-full gap-2">
+                <UserPlus class="h-4 w-4" />
+                Sign Up
+              </Button>
             </RouterLink>
           </template>
         </nav>

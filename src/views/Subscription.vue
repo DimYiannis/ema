@@ -36,14 +36,14 @@ const premiumPrice = computed(() => prices.premium[billing.value].toFixed(2));
 
 const basicFeatures = [
   "AI Voice Assistant",
-  "300 minutes of voice calls/month",
+  "300 minutes of voice minutes/month",
   "Standard support",
   "Basic analytics",
 ];
 
 const premiumFeatures = [
   "Everything in Basic",
-  "1000 minutes of voice calls/month",
+  "1000 minutes of voice minutes/month",
   "Priority support",
   "Advanced analytics",
   "Unused minutes carryover (annual)",

@@ -9,8 +9,11 @@ import Button from "@/components/ui/button.vue";
 import Input from "@/components/ui/input.vue";
 import Label from "@/components/ui/label.vue";
 import { toast } from "vue-sonner";
-import { LogIn } from "lucide-vue-next";
+import { LogIn, Sparkles } from "lucide-vue-next";
 import { supabase } from "@/integrations/supabase/client";
+
+const DEMO_EMAIL = "demo@ema.ai";
+const DEMO_PASSWORD = "Demo1234!";
 
 const router = useRouter();
 
@@ -46,6 +49,19 @@ onMounted(() => {
 });
 
 onUnmounted(() => authSubscription?.unsubscribe());
+
+const isDemoLoading = ref(false);
+
+const loginAsDemo = async () => {
+  isDemoLoading.value = true;
+  const { error } = await supabase.auth.signInWithPassword({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
+  isDemoLoading.value = false;
+  if (error) {
+    toast.error("Demo unavailable", { description: "Demo account not set up yet." });
+    return;
+  }
+  toast.success("Welcome to the demo!", { description: "You're exploring ema. as a demo user." });
+};
 
 const onSubmit = handleSubmit(async (values) => {
   const { error } = await supabase.auth.signInWithPassword({
@@ -105,7 +121,30 @@ const onSubmit = handleSubmit(async (values) => {
           </Button>
         </form>
 
-        <div class="mt-6 text-center">
+        <div class="mt-5 relative flex items-center gap-3">
+          <div class="flex-1 h-px bg-border" />
+          <span class="text-xs text-muted-foreground shrink-0">or</span>
+          <div class="flex-1 h-px bg-border" />
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          class="w-full mt-4 gap-2 border-dashed"
+          :disabled="isDemoLoading || isSubmitting"
+          @click="loginAsDemo"
+        >
+          <span v-if="isDemoLoading" class="flex items-center gap-2">
+            <div class="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+            Loading demo...
+          </span>
+          <span v-else class="flex items-center gap-2">
+            <Sparkles class="w-4 h-4" />
+            Try Demo Account
+          </span>
+        </Button>
+
+        <div class="mt-5 text-center">
           <p class="text-sm text-muted-foreground">
             Don't have an account?
             <RouterLink to="/register" class="text-primary font-medium hover:underline ml-1">Sign up</RouterLink>

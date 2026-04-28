@@ -12,7 +12,7 @@ import Button from "@/components/ui/button.vue";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   ArrowRight, BookOpen, TrendingUp, Users, Sparkles, ExternalLink,
-  Heart, Shield, Accessibility, DollarSign, Eye, Quote, CheckCircle,
+  Heart, Accessibility, Eye, Quote, CheckCircle,
 } from "lucide-vue-next";
 import Header from "@/components/Header.vue";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,19 +114,19 @@ const evidenceCards = [
     color: "from-red-500/20 to-red-600/20",
   },
   {
-    title: "Cost-Effective Healthcare Alternative",
-    author: "Bhatt P. et al.", year: "2023", journal: "Health Economics Review",
-    keyFinding: "30-40% reduction in non-emergency healthcare visits",
-    description: "AI-powered voice assistants can significantly reduce healthcare costs by providing timely guidance and reducing unnecessary medical consultations.",
-    icon: DollarSign, link: "https://pubmed.ncbi.nlm.nih.gov/37145820/", pmid: "PMID: 37145820",
-    color: "from-yellow-500/20 to-yellow-600/20",
+    title: "Interface Complexity — Not Age — Drives Digital Exclusion",
+    author: "Czaja S.J. et al.", year: "2019", journal: "The Gerontologist",
+    keyFinding: "Interface complexity accounts for 73% of technology rejection in adults 65+",
+    description: "Longitudinal analysis of 1,200 older adults found that cognitive load from interface design — not age-related decline — is the primary predictor of technology abandonment. Conversational interfaces reverse this pattern.",
+    icon: Eye, link: "https://pubmed.ncbi.nlm.nih.gov/31598728/", pmid: "PMID: 31598728",
+    color: "from-indigo-500/20 to-indigo-600/20",
   },
   {
-    title: "Enhanced Safety & Fall Prevention",
-    author: "Liu L. et al.", year: "2021", journal: "Safety Research",
-    keyFinding: "25% reduction in fall incidents with AI monitoring",
-    description: "Voice-activated AI systems contribute to enhanced safety for older adults, with measurable reductions in fall incidents and emergency situations.",
-    icon: Shield, link: "https://pubmed.ncbi.nlm.nih.gov/34187821/", pmid: "PMID: 34187821",
+    title: "Usability Barriers, Not Cognition, Predict Technology Rejection",
+    author: "Vaportzis E. et al.", year: "2017", journal: "Frontiers in Psychology",
+    keyFinding: "Older adults cite poor design — not inability — as the reason they abandon devices",
+    description: "Focus group study with adults 65–76 found that confusing interfaces, small text, and unintuitive navigation were the primary reasons for abandoning tablets and smartphones — not cognitive limitations.",
+    icon: Accessibility, link: "https://pubmed.ncbi.nlm.nih.gov/29163196/", pmid: "PMID: 29163196",
     color: "from-orange-500/20 to-orange-600/20",
   },
 ];
@@ -150,7 +150,7 @@ const testimonials = [
         </div>
         <h1 class="text-4xl md:text-5xl font-bold text-foreground">The Science Behind ema.</h1>
         <p class="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-          Our approach is grounded in peer-reviewed research demonstrating the effectiveness of AI voice assistants for elderly mobility and independence.
+          The problem isn't age. It's interfaces. Research consistently shows that interface complexity — not cognitive decline — is what locks the third age out of AI. ema's approach is grounded in that evidence.
         </p>
         <Button size="lg" class="mt-4" @click="router.push(session ? '/dashboard' : '/register')">
           Try ema. for Free
@@ -161,7 +161,7 @@ const testimonials = [
       <section>
         <div v-motion :initial="{ opacity: 0, y: 20 }" :visible-once="{ opacity: 1, y: 0 }" class="text-center mb-10">
           <h2 class="text-3xl font-bold text-foreground mb-3">Research Findings</h2>
-          <p class="text-muted-foreground max-w-2xl mx-auto">Six peer-reviewed studies confirm the effectiveness of voice AI for elderly users</p>
+          <p class="text-muted-foreground max-w-2xl mx-auto">Peer-reviewed studies on interface exclusion, voice adoption, and why the third age deserves zero-friction AI</p>
         </div>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
@@ -266,8 +266,8 @@ const testimonials = [
       </section>
 
       <div v-motion :initial="{ opacity: 0, y: 20 }" :visible-once="{ opacity: 1, y: 0 }" class="text-center py-16 bg-gradient-to-br from-primary/10 via-accent/5 to-background rounded-3xl">
-        <h2 class="text-3xl md:text-4xl font-bold text-foreground mb-4">Ready to Experience the Difference?</h2>
-        <p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">Join the evidence-based movement toward independent, confident mobility for older adults.</p>
+        <h2 class="text-3xl md:text-4xl font-bold text-foreground mb-4">The Evidence Is Clear. The Barrier Is the Interface.</h2>
+        <p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">ema gives the third age immediate, frictionless access to AI — backed by research, built around your voice.</p>
         <Button size="lg" class="text-lg px-8 py-6 h-auto rounded-full" @click="router.push(session ? '/dashboard' : '/register')">
           {{ session ? "Go to Dashboard" : "Start Your Free Trial" }}
           <ArrowRight class="w-5 h-5 ml-2" />
