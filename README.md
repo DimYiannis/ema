@@ -6,6 +6,9 @@
 
 ema is a voice-first AI assistant for the third age — removing the interface barrier that locks elderly people out of AI. No apps to learn, no menus to navigate. One button, your voice, full AI access.
 
+<img width="2598" height="1464" alt="image" src="https://github.com/user-attachments/assets/624d27bd-e8a7-468c-87f0-ae6f5954aa19" />
+
+
 ## Concept
 
 The problem isn't age. It's interfaces. Apps are built by digital natives for digital natives. ema's thesis: eliminate the interface entirely. Voice is the only UI that 60 years of life already trained you to use.
