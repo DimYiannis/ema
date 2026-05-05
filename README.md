@@ -1,5 +1,7 @@
 # ema.
 
+<img width="2646" height="1472" alt="image" src="https://github.com/user-attachments/assets/115d8eef-fd64-4444-ab25-ab47ee4c9690" />
+
 **No interface. Just speak.**
 
 ema is a voice-first AI assistant for the third age — removing the interface barrier that locks elderly people out of AI. No apps to learn, no menus to navigate. One button, your voice, full AI access.
